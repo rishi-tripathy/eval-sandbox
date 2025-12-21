@@ -1,0 +1,4 @@
+pytest
+pydantic
+rich
+typer

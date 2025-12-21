@@ -6,3 +6,5 @@ __pycache__/
 .ipynb_checkpoints/
 .pyproject.toml
 .python-version
+.claude
+.pytest_cache/
