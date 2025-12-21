@@ -1,0 +1,8 @@
+spec.md
+.venv/
+__pycache__/
+*.pyc
+.env
+.ipynb_checkpoints/
+.pyproject.toml
+.python-version
