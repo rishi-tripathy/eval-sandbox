@@ -1,5 +1,5 @@
-from pydantic import BaseModel, field_validator as validator
 from workbench.month import Month
+from pydantic import BaseModel, field_validator as validator, model_validator
 from typing import Optional, List
 from enum import Enum
 
@@ -44,14 +44,14 @@ class Scenario(BaseModel):
     base_monthly: BaseMonthly
     events: List[Event]
 
-    @validator('events')
-    def validate_events(cls, v: List[Event], values: dict) -> List[Event]:
-        start_month = values.get('start_month')
+    @model_validator(mode='after')
+    def validate_events(self) -> 'Scenario':
+        start_month = self.start_month
         if start_month:
-            for event in v:
+            for event in self.events:
                 if event.start_month < start_month:
                     raise ValueError(f"Event {event.label} starts before scenario start")
-        return v
+        return self
 
 class MonthlyRecord(BaseModel):
     month: Month

@@ -1,5 +1,6 @@
 from functools import total_ordering
 from typing import Iterator
+from pydantic_core import core_schema
 
 @total_ordering
 class Month:
@@ -48,3 +49,17 @@ class Month:
 
     def add(self, months: int) -> 'Month':
         return Month.from_index(self._index + months)
+    
+
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+
+        def validate_month(v):
+            if isinstance(v, cls):
+                return v
+            if isinstance(v, str):
+                return cls.from_string(v)
+            raise ValueError(f"Cannot convert {type(v)} to Month")
+
+        return core_schema.no_info_plain_validator_function(validate_month)
