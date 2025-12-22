@@ -52,7 +52,17 @@ def run_task(task_path: str, model: str = "stub") -> TaskResult:
     if eval_result.verdict == "infeasible": #begin repair loop
         repair_json = agent.repair(scenario_json, eval_result)
         if repair_json:
-            scenario = Scenario.model_validate_json(repair_json)
+            try:
+                scenario = Scenario.model_validate_json(repair_json)
+            except Exception as e:
+                return TaskResult(
+                task_id=task.id,
+                scenario_json={},
+                initial_verdict="error",
+                final_verdict="error",
+                tool_calls=tool_calls,
+                error_category=ErrorCategory.SCHEMA_MISMATCH
+            )
             final_result = run_eval(scenario)
             tool_calls += 1
             repair_attempts += 1
