@@ -1,6 +1,7 @@
 from pydantic import BaseModel, field_validator as validator
 from workbench.month import Month
 from typing import Optional, List
+from enum import Enum
 
 class Event(BaseModel):
     label: str
@@ -42,7 +43,7 @@ class Scenario(BaseModel):
     initial_state: InitialState
     base_monthly: BaseMonthly
     events: List[Event]
-        
+
     @validator('events')
     def validate_events(cls, v: List[Event], values: dict) -> List[Event]:
         start_month = values.get('start_month')
@@ -51,3 +52,26 @@ class Scenario(BaseModel):
                 if event.start_month < start_month:
                     raise ValueError(f"Event {event.label} starts before scenario start")
         return v
+
+class MonthlyRecord(BaseModel):
+    month: Month
+    starting_cash: float
+    base_takehome_salary: float
+    base_outflows: float
+    total_inflows: float
+    total_outflows: float
+    events_applied: List[Event]
+    ending_cash: float
+
+class InvariantType(Enum):
+    LIQUIDITY_FLOOR = "LIQUIDITY_FLOOR"
+    MONEY_CONSERVATION = "MONEY_CONSERVATION"
+    TEMPORAL_CONSISTENCY = "TEMPORAL_CONSISTENCY"
+
+  
+class Violation(BaseModel):
+    invariant: InvariantType
+    month: Month
+    record: MonthlyRecord
+    magnitude: Optional[float] = None
+    details: Optional[str] = None

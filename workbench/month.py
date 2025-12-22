@@ -1,4 +1,5 @@
 from functools import total_ordering
+from typing import Iterator
 
 @total_ordering
 class Month:
@@ -30,6 +31,12 @@ class Month:
         month = (index % 12) + 1
         return Month(year, month)
     
+    @classmethod
+    def iterate(cls, start: 'Month', count: int) -> Iterator['Month']:
+        for i in range(count):
+            yield start.add(i)
+
+
     def to_string(self) -> str:
         return f"{self.year:04d}-{self.month:02d}"
     
