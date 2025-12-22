@@ -27,6 +27,7 @@ class ErrorCategory(Enum):
     TOOL_CALL_HALLUCINATION = "TOOL_CALL_HALLUCINATION"  # agent claims eval result not present in trace
     EXCEEDED_MAX_TOOL_CALLS = "EXCEEDED_MAX_TOOL_CALLS"  # tool calls exceeded
     REPAIR_FAILED = "REPAIR_FAILED"  # repair attempt did not improve feasibility/min_cash
+    EXCEEDED_MAX_REPAIRS = "EXCEEDED_MAX_REPAIRS"  # repair attempts exceeded
     WRONG_VERDICT = "WRONG_VERDICT"  # fixture-only
     WRONG_FIRST_VIOLATION_MONTH = "WRONG_FIRST_VIOLATION_MONTH"  # fixture-only
     NO_TOOL_USE = "NO_TOOL_USE"  # tool_calls == 0 when task requires at least 1 (always, in v1)
