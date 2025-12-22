@@ -68,6 +68,14 @@ class InvariantType(Enum):
     MONEY_CONSERVATION = "MONEY_CONSERVATION"
     TEMPORAL_CONSISTENCY = "TEMPORAL_CONSISTENCY"
 
+    def get_precedence(self) -> int:
+        if self == InvariantType.MONEY_CONSERVATION:
+            return 0
+        elif self == InvariantType.TEMPORAL_CONSISTENCY:
+            return 1
+        elif self == InvariantType.LIQUIDITY_FLOOR:
+            return 2
+        return 3
   
 class Violation(BaseModel):
     invariant: InvariantType
