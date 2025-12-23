@@ -62,6 +62,12 @@ class MonthlyRecord(BaseModel):
     total_outflows: float
     events_applied: List[Event]
     ending_cash: float
+    
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            Month: lambda v: v.to_string()
+        }
 
 class InvariantType(Enum):
     LIQUIDITY_FLOOR = "LIQUIDITY_FLOOR"
@@ -83,3 +89,9 @@ class Violation(BaseModel):
     record: MonthlyRecord
     magnitude: Optional[float] = None
     details: Optional[str] = None
+    
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            Month: lambda v: v.to_string()
+        }

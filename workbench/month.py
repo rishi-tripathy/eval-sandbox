@@ -31,6 +31,14 @@ class Month:
         year = index // 12
         month = (index % 12) + 1
         return Month(year, month)
+        
+    def __json__(self):
+        """For JSON serialization"""
+        return self.to_string()
+    
+    def model_dump(self):
+        """For Pydantic serialization"""
+        return self.to_string()
     
     @classmethod
     def iterate(cls, start: 'Month', count: int) -> Iterator['Month']:

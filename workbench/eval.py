@@ -12,6 +12,12 @@ class EvalResult(BaseModel):
     violated_invariant: Optional[InvariantType] = None
     ledger_summary: dict[str, Any]
     violations: List[Violation]
+    
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            Month: lambda v: v.to_string()
+        }
 
     
 def run_eval(scenario: Scenario) -> EvalResult:

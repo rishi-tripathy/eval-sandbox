@@ -4,6 +4,8 @@ from typing import Optional
 from workbench.runner import run_task
 from workbench.task_types import TaskResult
 import json
+import uuid
+from datetime import datetime
 
 app = typer.Typer()
 
@@ -16,7 +18,8 @@ def run_single(
     """Run a single task and display results."""
     typer.echo(f"Running task: {task_path}")
     
-    result = run_task(str(task_path), model=model)
+    session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M_%S')}_{str(uuid.uuid4())[:8]}"
+    result = run_task(str(task_path), model=model, session_id=session_id)
     
     # Display results
     typer.echo(f"Initial verdict: {result.initial_verdict}")
