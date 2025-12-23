@@ -30,6 +30,7 @@ class ErrorCategory(Enum):
     EXCEEDED_MAX_REPAIRS = "EXCEEDED_MAX_REPAIRS"  # repair attempts exceeded
     WRONG_VERDICT = "WRONG_VERDICT"  # fixture-only
     WRONG_FIRST_VIOLATION_MONTH = "WRONG_FIRST_VIOLATION_MONTH"  # fixture-only
+    WRONG_VIOLATION = "WRONG_VIOLATION"  # fixture-only
     NO_TOOL_USE = "NO_TOOL_USE"  # tool_calls == 0 when task requires at least 1 (always, in v1)
     EARLY_STOP = "EARLY_STOP"  # stopped before running run_eval at least once
 
@@ -38,7 +39,7 @@ class TaskResult(BaseModel):
     scenario_json: dict = None
     repair_json: Optional[dict] = None
 
-    # Eval results
+    # Run results
     initial_verdict: str
     final_verdict: str
     first_violation_month: Optional[str] = None
@@ -50,6 +51,7 @@ class TaskResult(BaseModel):
 
     # Scoring
     verdict_correct: Optional[bool] = None
+    first_violation_month_correct: Optional[bool] = None
     violation_correct: Optional[bool] = None
     repair_attempted: bool = False
     repair_made_feasible: Optional[bool] = None

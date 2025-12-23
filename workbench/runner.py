@@ -125,6 +125,7 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
         tool_calls=tool_calls,
         repair_attempts=repair_attempts,
         verdict_correct=eval_result.verdict == task.expected.initial_verdict if task.expected else None,
+        first_violation_month_correct=eval_result.first_violation_month == task.expected.first_violation_month if task.expected else None,
         violation_correct=eval_result.violated_invariant == task.expected.violated_invariant if task.expected else None,
         repair_attempted=repair_json is not None,
         repair_made_feasible=final_result.verdict == "feasible",
@@ -142,6 +143,15 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
 
     elif eval_result.verdict == "infeasible" and task_result.final_verdict == "infeasible" and task_result.repair_made_feasible is False:
         task_result.error_category = ErrorCategory.REPAIR_FAILED
+
+    elif task_result.verdict_correct is not None and task_result.verdict_correct is False:
+        task_result.error_category = ErrorCategory.WRONG_VERDICT
+    
+    elif task_result.first_violation_month_correct is not None and task_result.first_violation_month_correct is False:
+        task_result.error_category = ErrorCategory.WRONG_FIRST_VIOLATION_MONTH
+    
+    elif task_result.violation_correct is not None and task_result.violation_correct is False:
+        task_result.error_category = ErrorCategory.WRONG_VIOLATION
     
     trace.final_result = task_result.model_dump()
     write_trace(trace)

@@ -6,6 +6,7 @@ from workbench.task_types import TaskResult
 import json
 import uuid
 from datetime import datetime
+import os
 
 app = typer.Typer()
 
@@ -36,20 +37,74 @@ def run_single(
 @app.command()
 def run_suite(
     task_dir: Path = typer.Argument("tasks/v1", help="Directory containing task files"),
-    model: str = typer.Option("stub", help="Model to use (stub, claude)")
+    model: str = typer.Option("stub", help="Model to use (stub, claude)"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output")
 ):
     """Run all tasks in a directory."""
     task_files = list(task_dir.glob("*.json"))
     typer.echo(f"Found {len(task_files)} tasks")
+    session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M_%S')}_{str(uuid.uuid4())[:8]}"
+    total_tasks = 0;
+    feasible_tasks = 0;
+    infeasible_tasks = 0;
+    tasks_with_repair = 0;
+    error_tasks = 0;
+
+    tasks_with_correct_verdict = 0;
+    tasks_with_correct_violation = 0;
+    tasks_with_correct_first_violation_month = 0;
+    tasks_with_correct_repair = 0;
     
-    # TODO: Implement suite runner
-    # Should:
-    # 1. Run each task
-    # 2. Collect results
-    # 3. Generate summary report
-    # 4. Save to session directory
+    session_summary = ""
     
-    typer.echo("Suite runner not implemented yet")
+    try:
+        for task in task_files:
+            result = run_task(str(task), model=model, session_id=session_id)
+            total_tasks += 1
+            if result.final_verdict == "feasible":
+                feasible_tasks += 1
+            elif result.final_verdict == "infeasible":
+                infeasible_tasks += 1
+            if result.error_category is not None:
+                error_tasks += 1
+            if result.repair_attempts > 0:
+                tasks_with_repair += 1
+            
+            if result.verdict_correct:
+                tasks_with_correct_verdict += 1
+            if result.violation_correct:
+                tasks_with_correct_violation += 1
+            if result.final_verdict == "feasible" and result.repair_made_feasible:
+                tasks_with_correct_repair += 1
+            if result.first_violation_month_correct:
+                tasks_with_correct_first_violation_month += 1
+            
+            session_summary = f"""
+            Session summary:
+            total_tasks: {total_tasks}
+            feasible_tasks: {feasible_tasks}
+            infeasible_tasks: {infeasible_tasks}
+            tasks_with_repair: {tasks_with_repair}
+            tasks_with_correct_verdict: {tasks_with_correct_verdict}
+            tasks_with_correct_violation: {tasks_with_correct_violation}
+            tasks_with_correct_first_violation_month: {tasks_with_correct_first_violation_month}
+            error_tasks: {error_tasks}
+            """
+            # if verbose:
+            #     typer.echo("\nFull result for task {task.name}:")
+            #     typer.echo(result.model_dump_json(indent=2))
+
+    except Exception as e:
+        typer.secho(f"Error: {e}", fg=typer.colors.RED)
+    
+    finally:    
+        write_session_summary(session_id, session_summary)
+
+def write_session_summary(session_id: str, session_summary: str):
+    typer.secho(f"Session summary: {session_summary}", fg=typer.colors.BLUE)
+    os.makedirs(f"traces/{session_id}", exist_ok=True)  # Add this line
+    with open(f"traces/{session_id}/summary.txt", "w") as f: f.write(session_summary)
+    return
 
 @app.command()
 def validate(

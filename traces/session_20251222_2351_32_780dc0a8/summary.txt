@@ -1,0 +1,11 @@
+
+            Session summary:
+            total_tasks: 1
+            feasible_tasks: 1
+            infeasible_tasks: 0
+            tasks_with_repair: 1
+            tasks_with_correct_verdict: 1
+            tasks_with_correct_violation: 1
+            tasks_with_correct_first_violation_month: 0
+            error_tasks: 1
+            
