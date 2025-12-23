@@ -1,0 +1,15 @@
+{
+  "id": "test13",
+  "title": "Very tight but feasible",
+  "mode": "fast",
+  "prompt": "Create a financial scenario starting in January 2024, running for 4 months. Starting cash: $1,500. Monthly takehome: $4,000, baseline expenses: $3,500. Add a one-time expense of $1,900 in February only.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible",
+    "first_violation_month": null,
+    "violated_invariant": null
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "run_id": "f8225bbd-1824-483c-bf4f-9987919f734c",
+  "session_id": "session_20251223_0013_36_062f840a",
+  "task_id": "test14",
+  "timestamp": "2025-12-23T00:13:36.126417",
+  "model": "stub",
+  "prompt": "Create a financial scenario starting in November 2024, running for 4 months. Starting cash: $5,000. Monthly takehome: $3,000, expenses: $2,000. Add a holiday bonus of $5,000 in December 2024. Add new year expense of $2,000 in January 2025.",
+  "execution_steps": [
+    {
+      "step": "draft",
+      "input": "Create a financial scenario starting in November 2024, running for 4 months. Starting cash: $5,000. Monthly takehome: $3,000, expenses: $2,000. Add a holiday bonus of $5,000 in December 2024. Add new year expense of $2,000 in January 2025.",
+      "output": "{\"id\": \"stub_scenario\", \"title\": \"Stub scenario\", \"start_month\": \"2024-01\", \"horizon_months\": 12, \"initial_state\": {\"starting_cash\": 5000}, \"base_monthly\": {\"takehome_salary\": 2000, \"outflows\": -4000}, \"events\": []}",
+      "duration_ms": 0
+    },
+    {
+      "step": "eval_initial",
+      "input": "{\"id\": \"stub_scenario\", \"title\": \"Stub scenario\", \"start_month\": \"2024-01\", \"horizon_months\": 12, \"initial_state\": {\"starting_cash\": 5000}, \"base_monthly\": {\"takehome_salary\": 2000, \"outflows\": -4000}, \"events\": []}",
+      "output": {
+        "verdict": "infeasible",
+        "first_violation_month": "2024-03",
+        "violated_invariant": "LIQUIDITY_FLOOR",
+        "ledger_summary": {
+          "min_cash": -19000.0,
+          "ending_cash": -19000.0,
+          "months_simulated": 12
+        },
+        "violations": [
+          {
+            "invariant": "LIQUIDITY_FLOOR",
+            "month": "2024-03",
+            "record": {
+              "month": "2024-03",
+              "starting_cash": 1000.0,
+              "base_takehome_salary": 2000.0,
+              "base_outflows": -4000.0,
+              "total_inflows": 2000.0,
+              "total_outflows": -4000.0,
+              "events_applied": [],
+              "ending_cash": -1000.0
+            },
+            "magnitude": 1000.0,
+            "details": "Cash fell below 0.0 to -1000.0 at 2024-03"
+          }
+        ]
+      },
+      "duration_ms": 0
+    },
+    {
+      "step": "repair",
+      "input": "{\"id\": \"stub_scenario\", \"title\": \"Stub scenario\", \"start_month\": \"2024-01\", \"horizon_months\": 12, \"initial_state\": {\"starting_cash\": 5000}, \"base_monthly\": {\"takehome_salary\": 2000, \"outflows\": -4000}, \"events\": []}",
+      "output": "{\"id\": \"stub_scenario\", \"title\": \"Stub scenario\", \"start_month\": \"2024-01\", \"horizon_months\": 12, \"initial_state\": {\"starting_cash\": 5000}, \"base_monthly\": {\"takehome_salary\": 2000, \"outflows\": -1000}, \"events\": []}",
+      "duration_ms": 0
+    },
+    {
+      "step": "eval_repair",
+      "input": "{\"id\": \"stub_scenario\", \"title\": \"Stub scenario\", \"start_month\": \"2024-01\", \"horizon_months\": 12, \"initial_state\": {\"starting_cash\": 5000}, \"base_monthly\": {\"takehome_salary\": 2000, \"outflows\": -1000}, \"events\": []}",
+      "output": {
+        "verdict": "feasible",
+        "first_violation_month": null,
+        "violated_invariant": null,
+        "ledger_summary": {
+          "min_cash": 6000.0,
+          "ending_cash": 17000.0,
+          "months_simulated": 12
+        },
+        "violations": []
+      },
+      "duration_ms": 0
+    }
+  ],
+  "final_result": {
+    "task_id": "test14",
+    "scenario_json": {
+      "id": "stub_scenario",
+      "title": "Stub scenario",
+      "start_month": "2024-01",
+      "horizon_months": 12,
+      "initial_state": {
+        "starting_cash": 5000
+      },
+      "base_monthly": {
+        "takehome_salary": 2000,
+        "outflows": -4000
+      },
+      "events": []
+    },
+    "repair_json": {
+      "id": "stub_scenario",
+      "title": "Stub scenario",
+      "start_month": "2024-01",
+      "horizon_months": 12,
+      "initial_state": {
+        "starting_cash": 5000
+      },
+      "base_monthly": {
+        "takehome_salary": 2000,
+        "outflows": -1000
+      },
+      "events": []
+    },
+    "initial_verdict": "infeasible",
+    "final_verdict": "feasible",
+    "first_violation_month": null,
+    "violated_invariant": null,
+    "tool_calls": 2,
+    "repair_attempts": 1,
+    "verdict_correct": false,
+    "first_violation_month_correct": false,
+    "violation_correct": false,
+    "repair_attempted": true,
+    "repair_made_feasible": true,
+    "error_category": "WRONG_VERDICT"
+  }
+}

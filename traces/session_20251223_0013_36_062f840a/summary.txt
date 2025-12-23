@@ -1,0 +1,11 @@
+
+            Session summary:
+            total_tasks: 13
+            feasible_tasks: 13
+            infeasible_tasks: 0
+            tasks_with_repair: 13
+            tasks_with_correct_verdict: 3
+            tasks_with_correct_violation: 3
+            tasks_with_correct_first_violation_month: 0
+            error_tasks: 13
+            

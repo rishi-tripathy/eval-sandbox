@@ -7,6 +7,8 @@ import json
 import uuid
 from datetime import datetime
 import os
+from workbench.trace_types import Trace
+from typing import List
 
 app = typer.Typer()
 
@@ -56,10 +58,13 @@ def run_suite(
     tasks_with_correct_repair = 0;
     
     session_summary = ""
+    session_results = []
     
     try:
         for task in task_files:
             result = run_task(str(task), model=model, session_id=session_id)
+            # Use mode='json' to properly serialize enums
+            session_results.append(result.model_dump(mode='json'))
             total_tasks += 1
             if result.final_verdict == "feasible":
                 feasible_tasks += 1
@@ -98,12 +103,16 @@ def run_suite(
         typer.secho(f"Error: {e}", fg=typer.colors.RED)
     
     finally:    
-        write_session_summary(session_id, session_summary)
+        write_session_summary(session_id, session_summary, session_results)
 
-def write_session_summary(session_id: str, session_summary: str):
+def write_session_summary(session_id: str, session_summary: str, session_results: List[dict]):
     typer.secho(f"Session summary: {session_summary}", fg=typer.colors.BLUE)
     os.makedirs(f"traces/{session_id}", exist_ok=True)  # Add this line
-    with open(f"traces/{session_id}/summary.txt", "w") as f: f.write(session_summary)
+    with open(f"traces/{session_id}/summary.txt", "w") as f: 
+            f.write(session_summary)
+    with open(f"traces/{session_id}/results.ndjson", "w") as f: 
+        for result in session_results:
+            f.write(json.dumps(result) + "\n")
     return
 
 @app.command()

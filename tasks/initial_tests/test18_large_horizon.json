@@ -1,0 +1,15 @@
+{
+  "id": "test18",
+  "title": "Five year plan",
+  "mode": "fast",
+  "prompt": "Create a financial scenario starting in January 2024, running for 60 months (5 years). Starting cash: $10,000. Monthly takehome: $5,000, baseline expenses: $4,500. Add an annual raise of $500 starting in January 2025 that continues indefinitely.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible",
+    "first_violation_month": null,
+    "violated_invariant": null
+  }
+}

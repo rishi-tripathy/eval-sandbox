@@ -96,13 +96,13 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
             except Exception as e:
                 write_trace(trace)
                 return TaskResult(
-                task_id=task.id,
-                scenario_json={},
-                initial_verdict="error",
-                final_verdict="error",
-                tool_calls=tool_calls,
-                error_category=ErrorCategory.SCHEMA_MISMATCH
-            )
+                    task_id=task.id,
+                    scenario_json={},
+                    initial_verdict="error",
+                    final_verdict="error",
+                    tool_calls=tool_calls,
+                    error_category=ErrorCategory.SCHEMA_MISMATCH
+                )
             start_time = time.time()
             final_result = run_eval(scenario)
             duration_ms = int((time.time()-start_time)*1000)
