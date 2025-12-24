@@ -218,8 +218,37 @@ def init_trace(task_id: str, model: str, prompt: str, session_id: str) -> Trace:
 
 def write_trace(trace: Trace):
     os.makedirs(f"traces/{trace.session_id}", exist_ok=True)
-    with open(f"traces/{trace.session_id}/{trace.run_id}.json", "w") as f: 
-        f.write(trace.model_dump_json(indent=2))
+    try:
+        with open(f"traces/{trace.session_id}/{trace.run_id}.json", "w") as f: 
+            f.write(trace.model_dump_json(indent=2))
+    except Exception as e:
+        print(f"🐛 DEBUG: Error serializing trace for task {trace.task_id}: {e}")
+        
+        # Check each execution step
+        for i, step in enumerate(trace.execution_steps):
+            try:
+                step.model_dump_json()
+                print(f"  ✅ Step {i} ({step.step}): OK")
+            except Exception as step_e:
+                print(f"  ❌ Step {i} ({step.step}): ERROR - {step_e}")
+                # Dig deeper into step output
+                try:
+                    import json
+                    json.dumps(step.output)
+                    print(f"     step.output JSON serializable: OK")
+                except Exception as output_e:
+                    print(f"     step.output JSON error: {output_e}")
+        
+        # Check final_result 
+        try:
+            if trace.final_result:
+                import json
+                json.dumps(trace.final_result)
+                print("  ✅ final_result: OK")
+        except Exception as final_e:
+            print(f"  ❌ final_result: ERROR - {final_e}")
+        
+        raise e
     return
     
 def validate_repair_claim(original_json: str, repaired_json: str, claimed_type: str) -> bool:
