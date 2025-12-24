@@ -9,7 +9,6 @@ from datetime import datetime
 import time
 import uuid
 import os
-from json_diff import json_diff
 
 
 def run_task(task_path: str, model: str = "stub", session_id: str = None) -> TaskResult:
@@ -21,6 +20,8 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
     agent = get_agent(model)
     tool_calls = 0
     repair_attempts = 0
+    scenario_json = None
+    repair_scenario_json = None
 
     # Try to draft scenario
     try:
@@ -74,16 +75,15 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
         duration_ms=duration_ms
     ))
 
-    repair_json = None
     final_result = eval_result
 
     if eval_result.verdict == "infeasible": #begin repair loop
         start_time = time.time()
         repair_data = agent.repair(scenario_json, eval_result)
         try:
-            repair_json = json.loads(repair_data)
-            repair_type = repair_json.get("repair_applied").get("type")
-            repair_scenario_json = json.dumps(repair_json.get("repaired_scenario"))
+            repair_json_packaged = json.loads(repair_data)
+            repair_type = repair_json_packaged.get("repair_applied").get("type")
+            repair_scenario_json = json.dumps(repair_json_packaged.get("repaired_scenario"))
         except Exception as e:
             write_trace(trace)
             return TaskResult(
@@ -122,13 +122,13 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
         trace.execution_steps.append(ExecutionStep(
             step="repair",
             input=scenario_json,
-            output=repair_scenario_json,
+            output=repair_json_packaged,
             duration_ms=duration_ms
         ))
 
         tool_calls += 1
         repair_attempts += 1
-        if repair_json:
+        if repair_scenario_json:
             try:
                 scenario = Scenario.model_validate_json(repair_scenario_json)
             except Exception as e:
@@ -147,7 +147,7 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
 
             trace.execution_steps.append(ExecutionStep(
                 step="eval_repair",
-                input=repair_json,
+                input=repair_scenario_json,
                 output=final_result,
                 duration_ms=duration_ms
             ))
@@ -155,7 +155,7 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
     task_result = TaskResult(
         task_id=task.id,
         scenario_json=json.loads(scenario_json),
-        repair_json=json.loads(repair_json) if repair_json else None,
+        repair_json=json.loads(repair_scenario_json) if repair_scenario_json else None,
         initial_verdict=eval_result.verdict,
         final_verdict=final_result.verdict,
         first_violation_month=final_result.first_violation_month,
@@ -165,7 +165,7 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
         verdict_correct=eval_result.verdict == task.expected.initial_verdict if task.expected else None,
         first_violation_month_correct=eval_result.first_violation_month == task.expected.first_violation_month if task.expected else None,
         violation_correct=eval_result.violated_invariant == task.expected.violated_invariant if task.expected else None,
-        repair_attempted=repair_json is not None,
+        repair_attempted=repair_scenario_json is not None,
         repair_made_feasible=final_result.verdict == "feasible",
         error_category=None
     )
