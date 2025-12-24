@@ -82,11 +82,23 @@ pytest --cov=workbench
    - `run_eval()`: Main entry point returning verdict + violations
    - Produces ledger summaries and detailed violation data
 
-5. **Agent System** (`workbench/agent_simple.py`)
+5. **Agent System** (`workbench/models/agents.py`)
 
    - Two-turn loop: draft scenario → validate → eval → optional repair
    - Constrained to specific repair knobs (timing, amounts, baseline adjustments)
    - Maximum one repair attempt per run
+   - Repair response format:
+     ```json
+     {
+       "repaired_scenario": { /* full scenario JSON */ },
+       "repair_applied": {
+         "type": "baseline_reduction" | "event_amount_adjustment" | "event_timing_shift",
+         "changes": "Description of what was changed"
+       }
+     }
+     ```
+   - Only ONE repair strategy allowed per attempt
+   - Repairs must be validated against claimed type before evaluation
 
 6. **Task Framework** (`workbench/task_types.py`, `workbench/runner.py`)
    - JSON-based task specifications with limits and expectations
@@ -167,8 +179,9 @@ You should act as a **technical teaching partner** using Feynman-inspired method
 
 ### Current Progress
 
-- ✅ Completed Assignment 1: Designed invariants and constraints
-- 🔄 Currently working on: Implementing Month type in `workbench/month.py`
+- ✅ Completed M0: Deterministic core with golden fixtures
+- ✅ Completed M1: Task runner, traces, error taxonomy, CLI
+- 🔄 Currently working on: M2 Claude integration
 - Demonstrated clear understanding of project goals and constraint philosophy
 
 ### Key Decisions Made
@@ -177,6 +190,9 @@ You should act as a **technical teaching partner** using Feynman-inspired method
 2. **No tolerances in v1**: Strict equality for MONEY_CONSERVATION
 3. **Repair constraints**: Only allow date shifts, amount adjustments, and baseline spending reduction
 4. **Sign convention strictness**: No positive discretionary spending allowed as repair
+5. **Repair validation**: Agents must declare repair type and changes must match declaration
+6. **One-shot JSON**: Claude must return valid JSON without tool assistance
+7. **No repair reasonableness limits**: Let traces reveal if repairs are too aggressive
 
 ### Guiding Principles
 

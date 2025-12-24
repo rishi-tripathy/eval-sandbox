@@ -9,6 +9,7 @@ from datetime import datetime
 import time
 import uuid
 import os
+from json_diff import json_diff
 
 
 def run_task(task_path: str, model: str = "stub", session_id: str = None) -> TaskResult:
@@ -78,13 +79,50 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
 
     if eval_result.verdict == "infeasible": #begin repair loop
         start_time = time.time()
-        repair_json = agent.repair(scenario_json, eval_result)
+        repair_data = agent.repair(scenario_json, eval_result)
+        try:
+            repair_json = json.loads(repair_data)
+            repair_type = repair_json.get("repair_applied").get("type")
+            repair_scenario_json = json.dumps(repair_json.get("repaired_scenario"))
+        except Exception as e:
+            write_trace(trace)
+            return TaskResult(
+                task_id=task.id,
+                scenario_json={},
+                initial_verdict="error",
+                final_verdict="error",
+                tool_calls=tool_calls,
+                error_category=ErrorCategory.INVALID_JSON
+            )
+        
+        if repair_type not in ["baseline_reduction", "event_amount_adjustment", "event_timing_shift"]:
+            write_trace(trace)
+            return TaskResult(
+                task_id=task.id,
+                scenario_json={},
+                initial_verdict="error",
+                final_verdict="error",
+                tool_calls=tool_calls,
+                error_category=ErrorCategory.INACCURATE_REPAIR_LABEL
+            )
+        
+        if not validate_repair_claim(scenario_json, repair_scenario_json, repair_type):
+            write_trace(trace)
+            return TaskResult(
+                task_id=task.id,
+                scenario_json={},
+                initial_verdict="error",
+                final_verdict="error",
+                tool_calls=tool_calls,
+                error_category=ErrorCategory.INACCURATE_REPAIR_LABEL
+            )
+
         duration_ms = int((time.time()-start_time)*1000)
 
         trace.execution_steps.append(ExecutionStep(
             step="repair",
             input=scenario_json,
-            output=repair_json,
+            output=repair_scenario_json,
             duration_ms=duration_ms
         ))
 
@@ -92,7 +130,7 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
         repair_attempts += 1
         if repair_json:
             try:
-                scenario = Scenario.model_validate_json(repair_json)
+                scenario = Scenario.model_validate_json(repair_scenario_json)
             except Exception as e:
                 write_trace(trace)
                 return TaskResult(
@@ -174,3 +212,74 @@ def write_trace(trace: Trace):
     with open(f"traces/{trace.session_id}/{trace.run_id}.json", "w") as f: f.write(trace.model_dump_json(indent=2))
     return
     
+def validate_repair_claim(original_json: str, repaired_json: str, claimed_type: str) -> bool:
+    original = json.loads(original_json)
+    repaired = json.loads(repaired_json)
+
+    if claimed_type == "baseline_reduction":
+      # Outflows must change
+      if original["base_monthly"]["outflows"] == repaired["base_monthly"]["outflows"]:
+          return False
+
+      # Check all top-level fields except base_monthly
+      for field in ["id", "title", "start_month", "horizon_months", "initial_state", "events"]:
+          if original.get(field) != repaired.get(field):
+              return False
+
+      # Check base_monthly.takehome_salary stayed the same
+      if original["base_monthly"]["takehome_salary"] != repaired["base_monthly"]["takehome_salary"]:
+          return False
+
+      return True
+    
+    elif claimed_type == "event_amount_adjustment":
+      # First, check same number of events
+      if len(original["events"]) != len(repaired["events"]):
+          return False
+
+      # Count how many events have different amounts
+      changes_count = 0
+      for i in range(len(original["events"])):
+          orig_event = original["events"][i]
+          rep_event = repaired["events"][i]
+        
+          # Check if amount changed signs
+          if orig_event["amount"] * rep_event["amount"] > 0:
+              return False
+
+          # Check if amount changed
+          if orig_event["amount"] != rep_event["amount"]:
+              changes_count += 1
+
+          # Check all other fields stayed the same
+          for field in ["label", "start_month", "duration_months"]:
+              if field in orig_event:  # Handle optional fields
+                  if orig_event.get(field) != rep_event.get(field):
+                      return False
+
+      # Exactly one event should have changed amount
+      return changes_count == 1
+    
+    elif claimed_type == "event_timing_shift":
+      # First, check same number of events
+      if len(original["events"]) != len(repaired["events"]):
+          return False
+
+      # Count how many events have different start months
+      changes_count = 0
+      for i in range(len(original["events"])):
+          orig_event = original["events"][i]
+          rep_event = repaired["events"][i]
+
+          # Check if start month changed
+          if orig_event["start_month"] != rep_event["start_month"]:
+              changes_count += 1
+
+          # Check all other fields stayed the same
+          for field in ["label", "amount", "duration_months"]:
+              if field in orig_event:  # Handle optional fields
+                  if orig_event.get(field) != rep_event.get(field):
+                      return False
+
+      # Exactly one event should have changed start month
+      return changes_count == 1

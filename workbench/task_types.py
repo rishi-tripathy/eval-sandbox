@@ -33,6 +33,7 @@ class ErrorCategory(Enum):
     WRONG_VIOLATION = "WRONG_VIOLATION"  # fixture-only
     NO_TOOL_USE = "NO_TOOL_USE"  # tool_calls == 0 when task requires at least 1 (always, in v1)
     EARLY_STOP = "EARLY_STOP"  # stopped before running run_eval at least once
+    INACCURATE_REPAIR_LABEL = "INACCURATE_REPAIR_LABEL"  # repair label does not match issued repair type
 
 class TaskResult(BaseModel):
     task_id: str
