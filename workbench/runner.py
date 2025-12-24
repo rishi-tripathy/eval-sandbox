@@ -79,7 +79,7 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
 
     if eval_result.verdict == "infeasible": #begin repair loop
         start_time = time.time()
-        repair_data = agent.repair(scenario_json, eval_result)
+        repair_data = agent.repair(scenario_json, eval_result.model_dump())
         try:
             repair_json_packaged = json.loads(repair_data)
             repair_type = repair_json_packaged.get("repair_applied").get("type")

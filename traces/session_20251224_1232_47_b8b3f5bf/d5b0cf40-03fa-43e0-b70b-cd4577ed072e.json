@@ -1,0 +1,50 @@
+{
+  "run_id": "d5b0cf40-03fa-43e0-b70b-cd4577ed072e",
+  "session_id": "session_20251224_1232_47_b8b3f5bf",
+  "task_id": "test3",
+  "timestamp": "2025-12-24T12:32:47.584193",
+  "model": "claude",
+  "prompt": "Create a financial scenario starting in January 2024, running for 6 months. Starting cash is $2,000. Monthly takehome salary is $3,000 and monthly expenses are $3,500.",
+  "execution_steps": [
+    {
+      "step": "draft",
+      "input": "Create a financial scenario starting in January 2024, running for 6 months. Starting cash is $2,000. Monthly takehome salary is $3,000 and monthly expenses are $3,500.",
+      "output": "{\n  \"id\": \"generic_scenario_001\",\n  \"title\": \"Basic 6 month scenario\",\n  \"start_month\": \"2024-01\",\n  \"horizon_months\": 6,\n  \"initial_state\": {\n    \"starting_cash\": 2000\n  },\n  \"base_monthly\": {\n    \"takehome_salary\": 3000,\n    \"outflows\": -3500\n  },\n  \"events\": []\n}",
+      "duration_ms": 1234
+    },
+    {
+      "step": "eval_initial",
+      "input": "{\n  \"id\": \"generic_scenario_001\",\n  \"title\": \"Basic 6 month scenario\",\n  \"start_month\": \"2024-01\",\n  \"horizon_months\": 6,\n  \"initial_state\": {\n    \"starting_cash\": 2000\n  },\n  \"base_monthly\": {\n    \"takehome_salary\": 3000,\n    \"outflows\": -3500\n  },\n  \"events\": []\n}",
+      "output": {
+        "verdict": "infeasible",
+        "first_violation_month": "2024-05",
+        "violated_invariant": "LIQUIDITY_FLOOR",
+        "ledger_summary": {
+          "min_cash": -1000.0,
+          "ending_cash": -1000.0,
+          "months_simulated": 6
+        },
+        "violations": [
+          {
+            "invariant": "LIQUIDITY_FLOOR",
+            "month": "2024-05",
+            "record": {
+              "month": "2024-05",
+              "starting_cash": 0.0,
+              "base_takehome_salary": 3000.0,
+              "base_outflows": -3500.0,
+              "total_inflows": 3000.0,
+              "total_outflows": -3500.0,
+              "events_applied": [],
+              "ending_cash": -500.0
+            },
+            "magnitude": 500.0,
+            "details": "Cash fell below 0.0 to -500.0 at 2024-05"
+          }
+        ]
+      },
+      "duration_ms": 0
+    }
+  ],
+  "final_result": null
+}
