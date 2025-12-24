@@ -244,7 +244,7 @@ def validate_repair_claim(original_json: str, repaired_json: str, claimed_type: 
           rep_event = repaired["events"][i]
         
           # Check if amount changed signs
-          if orig_event["amount"] * rep_event["amount"] > 0:
+          if orig_event["amount"] * rep_event["amount"] < 0:
               return False
 
           # Check if amount changed
