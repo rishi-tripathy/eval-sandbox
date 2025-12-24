@@ -66,9 +66,19 @@ def run_suite(
     
     try:
         for task in task_files:
-            result = run_task(str(task), model=model, session_id=session_id)
-            # Use mode='json' to properly serialize enums
-            session_results.append(result.model_dump(mode='json'))
+            try:
+                result = run_task(str(task), model=model, session_id=session_id)
+                # Use mode='json' to properly serialize enums
+                try:
+                    session_results.append(result.model_dump(mode='json'))
+                except Exception as e:
+                    typer.secho(f"Error processing result for task {task}: {e}", fg=typer.colors.RED)
+                    # Skip this task and continue
+                    continue
+            except Exception as e:
+                typer.secho(f"Error running task {task}: {e}", fg=typer.colors.RED)
+                # Skip this task and continue  
+                continue
             total_tasks += 1
             if result.final_verdict == "feasible":
                 feasible_tasks += 1

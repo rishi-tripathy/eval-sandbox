@@ -71,7 +71,7 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
     trace.execution_steps.append(ExecutionStep(
         step="eval_initial",
         input=scenario_json,
-        output=eval_result,
+        output=eval_result.model_dump(mode='json'),
         duration_ms=duration_ms
     ))
 
@@ -149,7 +149,7 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
             trace.execution_steps.append(ExecutionStep(
                 step="eval_repair",
                 input=repair_scenario_json,
-                output=final_result,
+                output=final_result.model_dump(mode='json'),
                 duration_ms=duration_ms
             ))
 
@@ -200,7 +200,7 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
     elif task_result.violation_correct is not None and task_result.violation_correct is False:
         task_result.error_category = ErrorCategory.WRONG_VIOLATION
     
-    trace.final_result = task_result.model_dump()
+    trace.final_result = task_result.model_dump(mode='json')
     write_trace(trace)
     return task_result
 
@@ -217,8 +217,9 @@ def init_trace(task_id: str, model: str, prompt: str, session_id: str) -> Trace:
     )
 
 def write_trace(trace: Trace):
-    os.makedirs(f"traces/{trace.session_id}", exist_ok=True)  # Add this line
-    with open(f"traces/{trace.session_id}/{trace.run_id}.json", "w") as f: f.write(trace.model_dump_json(indent=2))
+    os.makedirs(f"traces/{trace.session_id}", exist_ok=True)
+    with open(f"traces/{trace.session_id}/{trace.run_id}.json", "w") as f: 
+        f.write(trace.model_dump_json(indent=2))
     return
     
 def validate_repair_claim(original_json: str, repaired_json: str, claimed_type: str) -> bool:
