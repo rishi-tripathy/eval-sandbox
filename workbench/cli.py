@@ -52,10 +52,14 @@ def run_suite(
     tasks_with_repair = 0;
     error_tasks = 0;
 
-    tasks_with_correct_verdict = 0;
-    tasks_with_correct_violation = 0;
-    tasks_with_correct_first_violation_month = 0;
-    tasks_with_correct_repair = 0;
+    tasks_with_correct_verdict = 0
+    tasks_with_correct_violation = 0
+    tasks_with_correct_first_violation_month = 0
+    repairs_made_feasible = 0
+    
+    # Repair strategy tracking
+    repair_strategies = {}
+    error_categories = {}
     
     session_summary = ""
     session_results = []
@@ -79,10 +83,22 @@ def run_suite(
                 tasks_with_correct_verdict += 1
             if result.violation_correct:
                 tasks_with_correct_violation += 1
-            if result.final_verdict == "feasible" and result.repair_made_feasible:
-                tasks_with_correct_repair += 1
+            if result.repair_made_feasible:
+                repairs_made_feasible += 1
             if result.first_violation_month_correct:
                 tasks_with_correct_first_violation_month += 1
+                
+            # Track repair strategies
+            if result.repair_strategy:
+                repair_strategies[result.repair_strategy] = repair_strategies.get(result.repair_strategy, 0) + 1
+                
+            # Track error categories
+            if result.error_category:
+                error_name = result.error_category.value if hasattr(result.error_category, 'value') else str(result.error_category)
+                error_categories[error_name] = error_categories.get(error_name, 0) + 1
+            
+            repair_strategy_lines = "\n".join([f"            {strategy}: {count}" for strategy, count in repair_strategies.items()])
+            error_category_lines = "\n".join([f"            {error}: {count}" for error, count in error_categories.items()])
             
             session_summary = f"""
             Session summary:
@@ -90,10 +106,17 @@ def run_suite(
             feasible_tasks: {feasible_tasks}
             infeasible_tasks: {infeasible_tasks}
             tasks_with_repair: {tasks_with_repair}
+            repairs_made_feasible: {repairs_made_feasible}
             tasks_with_correct_verdict: {tasks_with_correct_verdict}
             tasks_with_correct_violation: {tasks_with_correct_violation}
             tasks_with_correct_first_violation_month: {tasks_with_correct_first_violation_month}
             error_tasks: {error_tasks}
+            
+            Repair strategies used:
+{repair_strategy_lines or "            (none)"}
+            
+            Error categories:
+{error_category_lines or "            (none)"}
             """
             # if verbose:
             #     typer.echo("\nFull result for task {task.name}:")

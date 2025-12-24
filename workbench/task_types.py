@@ -56,6 +56,7 @@ class TaskResult(BaseModel):
     violation_correct: Optional[bool] = None
     repair_attempted: bool = False
     repair_made_feasible: Optional[bool] = None
+    repair_strategy: Optional[str] = None
 
     #Taxonomy
     error_category: Optional[ErrorCategory] = None

@@ -14,37 +14,38 @@ You have access to exactly THREE repair mechanisms:
 You must:
 1. Choose exactly ONE repair mechanism
 2. Apply it to create a feasible scenario
-3. Return the response in this EXACT format with ONLY JSON and zero other characters:
+3. Return the response in this EXACT format with ONLY JSON and zero other characters. You must respond with ONLY valid JSON - no explanations, no additional text, no markdown formatting, no comments. Any characters outside the JSON structure will cause system failure.
 
 {
   "repaired_scenario": { 
-    // Complete scenario JSON with your single repair applied
+    (...)
   },
   "repair_applied": {
-    "type": "baseline_reduction" | "event_amount_adjustment" | "event_timing_shift",
+    "type": "",
     "changes": "Brief description of what you changed"
   }
 }
 
-Example repair (baseline_reduction):
-{
-  "repaired_scenario": {
-    "id": "move_scenario_001",
-    "title": "Apartment move with overlap", 
-    "start_month": "2024-01",
-    "horizon_months": 12,
-    "initial_state": {"starting_cash": 10000},
-    "base_monthly": {
-      "takehome_salary": 5000,
-      "outflows": -2000  // REDUCED from -3000
+Example repair format - you should use whichever repair type fits the failure and creates a reasonable outcome:
+
+  {
+    "repaired_scenario": {
+      "id": "same_as_original",
+      "title": "same_as_original",
+      "start_month": "same_as_original",
+      "horizon_months": "same_as_original",
+      "initial_state": "same_as_original",
+      "base_monthly": {
+        "takehome_salary": "same_as_original",
+        "outflows": "your_reduced_value_here"
+      },
+      "events": "same_as_original_pending_modifications_if_you_are_modifying_events"
     },
-    "events": [...]
-  },
-  "repair_applied": {
-    "type": "baseline_reduction",
-    "changes": "Reduced monthly outflows from -3000 to -2000"
+    "repair_applied": {
+      "type": "the_repair_type_you_chose",
+      "changes": "a_description_of_your_changes"
+    }
   }
-}
 
 Remember: 
 - Maintain all sign conventions (outflows negative, income positive)

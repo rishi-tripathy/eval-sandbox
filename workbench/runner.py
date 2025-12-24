@@ -76,10 +76,18 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
     ))
 
     final_result = eval_result
+    repair_type = None
 
     if eval_result.verdict == "infeasible": #begin repair loop
         start_time = time.time()
         repair_data = agent.repair(scenario_json, eval_result.model_dump())
+        duration_ms = int((time.time()-start_time)*1000)
+        trace.execution_steps.append(ExecutionStep(
+            step="repair",
+            input=scenario_json,
+            output=repair_data,
+            duration_ms=duration_ms
+        ))
         try:
             repair_json_packaged = json.loads(repair_data)
             repair_type = repair_json_packaged.get("repair_applied").get("type")
@@ -119,13 +127,6 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
 
         duration_ms = int((time.time()-start_time)*1000)
 
-        trace.execution_steps.append(ExecutionStep(
-            step="repair",
-            input=scenario_json,
-            output=repair_json_packaged,
-            duration_ms=duration_ms
-        ))
-
         tool_calls += 1
         repair_attempts += 1
         if repair_scenario_json:
@@ -152,6 +153,13 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
                 duration_ms=duration_ms
             ))
 
+    # Only calculate violation metrics for infeasible scenarios
+    violation_correct = None
+    first_violation_month_correct = None
+    if task.expected and task.expected.initial_verdict == "infeasible":
+        violation_correct = eval_result.violated_invariant == task.expected.violated_invariant
+        first_violation_month_correct = eval_result.first_violation_month == task.expected.first_violation_month
+
     task_result = TaskResult(
         task_id=task.id,
         scenario_json=json.loads(scenario_json),
@@ -163,10 +171,11 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
         tool_calls=tool_calls,
         repair_attempts=repair_attempts,
         verdict_correct=eval_result.verdict == task.expected.initial_verdict if task.expected else None,
-        first_violation_month_correct=eval_result.first_violation_month == task.expected.first_violation_month if task.expected else None,
-        violation_correct=eval_result.violated_invariant == task.expected.violated_invariant if task.expected else None,
+        first_violation_month_correct=first_violation_month_correct,
+        violation_correct=violation_correct,
         repair_attempted=repair_scenario_json is not None,
-        repair_made_feasible=final_result.verdict == "feasible",
+        repair_made_feasible=final_result.verdict == "feasible" if repair_scenario_json else None,
+        repair_strategy=repair_type,
         error_category=None
     )
 
