@@ -256,8 +256,8 @@ def validate_repair_claim(original_json: str, repaired_json: str, claimed_type: 
     repaired = json.loads(repaired_json)
 
     if claimed_type == "baseline_reduction":
-      # Outflows must change
-      if original["base_monthly"]["outflows"] == repaired["base_monthly"]["outflows"]:
+      # For baseline_reduction, outflows should become less negative (reduced spending)
+      if repaired["base_monthly"]["outflows"] <= original["base_monthly"]["outflows"]:
           return False
 
       # Check all top-level fields except base_monthly
@@ -300,6 +300,17 @@ def validate_repair_claim(original_json: str, repaired_json: str, claimed_type: 
       return changes_count == 1
     
     elif claimed_type == "event_timing_shift":
+      # Check that baseline spending stayed the same
+      if original["base_monthly"]["outflows"] != repaired["base_monthly"]["outflows"]:
+          return False
+      if original["base_monthly"]["takehome_salary"] != repaired["base_monthly"]["takehome_salary"]:
+          return False
+      
+      # Check all top-level fields except events
+      for field in ["id", "title", "start_month", "horizon_months", "initial_state"]:
+          if original.get(field) != repaired.get(field):
+              return False
+      
       # First, check same number of events
       if len(original["events"]) != len(repaired["events"]):
           return False

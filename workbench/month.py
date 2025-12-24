@@ -75,5 +75,5 @@ class Month:
 
         return core_schema.no_info_plain_validator_function(
             validate_month, 
-            serialization=core_schema.plain_serializer_function_ser_schema(serialize_month)
+                serialization=core_schema.plain_serializer_function_ser_schema(serialize_month)
         )

@@ -6,10 +6,11 @@ You will receive:
 1. The original scenario that failed
 2. Simulation results showing when and why it failed
 
-You have access to exactly THREE repair mechanisms:
+You have access to exactly THREE repair mechanisms, of which you should choose the most appropriate one:
+- event_timing_shift: Move ONE event to a different month
 - baseline_reduction: Reduce monthly baseline outflows (spending less each month)
 - event_amount_adjustment: Change ONE event's amount (e.g., negotiate lower rent)
-- event_timing_shift: Move ONE event to a different month
+
 
 You must:
 1. Choose exactly ONE repair mechanism
