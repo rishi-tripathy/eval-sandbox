@@ -8,4 +8,4 @@ __pycache__/
 .python-version
 .claude
 .pytest_cache/
-.traces/
+traces/
