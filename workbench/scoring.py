@@ -41,14 +41,18 @@ def calculate_task_score(result: TaskResult, task: Task) -> dict:
     # Repair Capability (20 pts - only applies when repair was attempted)
     if result.repair_attempted:
         repair_possible = 20
+        repair_earned = 0
+        
+        # Repair effectiveness (15 pts)
         if result.repair_made_feasible:
-            repair_earned = 20  # Successful repair
+            repair_earned += 15  # Successful repair
         elif result.error_category == ErrorCategory.REPAIR_FAILED:
-            repair_earned = 5   # Attempted but ineffective repair
-        elif result.error_category == ErrorCategory.INACCURATE_REPAIR_LABEL:
-            repair_earned = 3   # Repair logic error but tried
-        else:
-            repair_earned = 0   # Failed repair attempt (JSON/schema errors)
+            repair_earned += 3   # Attempted but ineffective repair
+        
+        # Repair labeling accuracy (5 pts) 
+        if result.repair_label_accurate:
+            repair_earned += 5   # Correctly labeled repair type
+        
         breakdown["repair_capability"] = {"earned": repair_earned, "possible": repair_possible}
         points_earned += repair_earned
         points_possible += repair_possible

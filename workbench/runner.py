@@ -122,15 +122,12 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
             result.error_category = ErrorCategory.INVALID_JSON
             return result
 
+        # Validate repair labels but don't block on this - track for scoring
+        result.repair_label_accurate = True
         if result.repair_strategy not in ["baseline_reduction", "event_amount_adjustment", "event_timing_shift"]:
-            write_trace(trace)
-            result.error_category = ErrorCategory.INACCURATE_REPAIR_LABEL
-            return result
-        
-        if not validate_repair_claim(json.dumps(draft_scenario_json), json.dumps(repair_scenario_json), result.repair_strategy):
-            write_trace(trace)
-            result.error_category = ErrorCategory.INACCURATE_REPAIR_LABEL
-            return result
+            result.repair_label_accurate = False
+        elif not validate_repair_claim(json.dumps(draft_scenario_json), json.dumps(repair_scenario_json), result.repair_strategy):
+            result.repair_label_accurate = False
 
         try:
             scenario = Scenario.model_validate(repair_scenario_json)
@@ -192,6 +189,9 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     
     elif result.violation_correct is not None and result.violation_correct is False:
         result.error_category = ErrorCategory.WRONG_VIOLATION
+    
+    elif result.repair_label_accurate is not None and result.repair_label_accurate is False:
+        result.error_category = ErrorCategory.INACCURATE_REPAIR_LABEL
     
     # Calculate overall score
     result = update_result_with_score(result, task)

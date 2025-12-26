@@ -63,6 +63,7 @@ class TaskResult(BaseModel):
     repair_made_feasible: Optional[bool] = None
     repair_strategy: Optional[str] = None
     repair_ledger_correct: Optional[bool] = None
+    repair_label_accurate: Optional[bool] = None
 
     #Taxonomy
     error_category: Optional[ErrorCategory] = None
