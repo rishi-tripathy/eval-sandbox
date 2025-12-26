@@ -2,7 +2,7 @@ import typer
 from pathlib import Path
 from typing import Optional
 from workbench.runner import run_task
-from workbench.task_types import TaskResult
+from workbench.task_types import Task, TaskResult, Limits
 import json
 import uuid
 from datetime import datetime
@@ -26,10 +26,28 @@ def run_single(
     session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M_%S')}_{str(uuid.uuid4())[:8]}"
     result = run_task(str(task_path), model=model, session_id=session_id, prompt_dir=prompt_dir, model_name=model_name)
     
-    # Display results
-    typer.echo(f"Initial verdict: {result.initial_verdict}")
-    typer.echo(f"Final verdict: {result.final_verdict}")
-    typer.echo(f"Tool calls: {result.tool_calls}")
+    # Display results with scoring breakdown
+    if result.initial_verdict != result.final_verdict:
+        verdict_display = f"{result.initial_verdict} → {result.final_verdict}"
+        if result.repair_made_feasible:
+            verdict_display += " (repair successful)"
+        else:
+            verdict_display += " (repair failed)"
+    else:
+        verdict_display = result.initial_verdict
+    
+    typer.echo(f"Result: {verdict_display}")
+    
+    if result.score_earned is not None and result.score_possible is not None:
+        typer.echo(f"Score: {result.score_earned}/{result.score_possible} ({result.score_percentage}%)")
+        
+        # Show scoring breakdown
+        from workbench.scoring import calculate_task_score
+        task = Task.model_validate_json(open(str(task_path)).read())
+        score_data = calculate_task_score(result, task)
+        typer.echo("Breakdown:")
+        for component, data in score_data["breakdown"].items():
+            typer.echo(f"  └ {component.replace('_', ' ').title()}: {data['earned']}/{data['possible']}")
     
     if result.error_category:
         typer.secho(f"Error: {result.error_category.value}", fg=typer.colors.RED)
@@ -81,9 +99,36 @@ def run_suite(
     session_results = []
     
     try:
-        for task in task_files:
+        for i, task in enumerate(task_files, 1):
+            # Show progress
+            task_name = task.stem
+            typer.echo(f"[{i}/{len(task_files)}] {task_name}...", nl=False)
+            
             try:
                 result = run_task(str(task), model=model, session_id=session_id, prompt_dir=prompt_dir, model_name=model_name)
+                
+                # Show result summary
+                if result.initial_verdict != result.final_verdict:
+                    verdict_display = f"{result.initial_verdict} → {result.final_verdict}"
+                    if result.repair_made_feasible:
+                        verdict_display += " (repair successful)"
+                    else:
+                        verdict_display += " (repair failed)"
+                else:
+                    verdict_display = result.initial_verdict
+                
+                score_display = ""
+                if result.score_earned is not None and result.score_possible is not None:
+                    score_display = f" - {result.score_earned}/{result.score_possible}"
+                
+                # Show error or success indicator
+                if result.error_category:
+                    typer.secho(f" {verdict_display}{score_display} ERROR: {result.error_category.value}", fg=typer.colors.RED)
+                elif result.repair_made_feasible != False:
+                    typer.secho(f" {verdict_display}{score_display} ✅", fg=typer.colors.GREEN)
+                else:
+                    typer.echo(f" {verdict_display}{score_display}")
+            
                 # Use mode='json' to properly serialize enums
                 try:
                     session_results.append(result.model_dump(mode='json'))
@@ -92,7 +137,7 @@ def run_suite(
                     # Skip this task and continue
                     continue
             except Exception as e:
-                typer.secho(f"Error running task {task}: {e}", fg=typer.colors.RED)
+                typer.secho(f" SYSTEM ERROR: {e}", fg=typer.colors.RED)
                 # Skip this task and continue  
                 continue
             total_tasks += 1
@@ -218,6 +263,77 @@ def validate(
         typer.secho("✓ Valid scenario", fg=typer.colors.GREEN)
     except Exception as e:
         typer.secho(f"✗ Invalid: {e}", fg=typer.colors.RED)
+
+@app.command()
+def run_prompt(
+    prompt: str = typer.Argument(..., help="Natural language financial scenario description"),
+    start_month: str = typer.Option("2024-01", help="Default start month if not specified in prompt"),
+    horizon: int = typer.Option(6, help="Default horizon if not specified in prompt"), 
+    starting_cash: float = typer.Option(1000, help="Default starting cash if not specified in prompt"),
+    generate_ledger: bool = typer.Option(True, "--ledger/--no-ledger", help="Request ledger generation"),
+    model: str = typer.Option("claude", help="Model to use"),
+    model_name: str = typer.Option(None, "--model-name", help="Specific model name"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output")
+):
+    """Run a direct prompt without predefined task file. Defaults are used only if scenario is missing required fields."""
+    
+    task = Task(
+        id="prompt_task",
+        title="Dynamic Prompt Task", 
+        mode="fast",
+        generate_ledger=generate_ledger,
+        prompt=prompt,  # Use raw prompt - no injection
+        limits=Limits(max_tool_calls=10, max_repairs=1),
+        expected=None  # No expected results for direct prompts
+    )
+    
+    typer.echo(f"Running prompt: {prompt}")
+    typer.echo(f"Defaults (if needed): {start_month}, {horizon} months, ${starting_cash:,.0f} starting cash")
+    
+    session_id = f"prompt_{datetime.now().strftime('%Y%m%d_%H%M_%S')}_{str(uuid.uuid4())[:8]}"
+    
+    # Use prompt-specific runner that handles field injection
+    from workbench.prompt_runner import run_prompt_task
+    result = run_prompt_task(
+        prompt=prompt,
+        model=model,
+        session_id=session_id,
+        model_name=model_name,
+        generate_ledger=generate_ledger,
+        start_month_default=start_month,
+        horizon_default=horizon,
+        starting_cash_default=starting_cash
+    )
+    
+    # Display results
+    if result.initial_verdict != result.final_verdict:
+        verdict_display = f"{result.initial_verdict} → {result.final_verdict}"
+        if result.repair_made_feasible:
+            verdict_display += " (repair successful)"
+        else:
+            verdict_display += " (repair failed)"
+    else:
+        verdict_display = result.initial_verdict
+    
+    typer.echo(f"Result: {verdict_display}")
+    
+    if result.score_earned is not None:
+        typer.echo(f"Score: {result.score_earned}/{result.score_possible} ({result.score_percentage}%)")
+        
+        from workbench.prompt_scoring import calculate_prompt_score
+        score_data = calculate_prompt_score(result)
+        typer.echo("Breakdown:")
+        for component, data in score_data["breakdown"].items():
+            typer.echo(f"  └ {component.replace('_', ' ').title()}: {data['earned']}/{data['possible']}")
+    
+    if result.error_category:
+        typer.secho(f"Error: {result.error_category.value}", fg=typer.colors.RED)
+    
+    if verbose:
+        typer.echo(f"\nGenerated scenario:")
+        if result.scenario_json:
+            scenario_obj = json.loads(result.scenario_json) 
+            typer.echo(json.dumps(scenario_obj, indent=2))
 
 if __name__ == "__main__":
     app()

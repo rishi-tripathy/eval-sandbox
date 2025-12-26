@@ -176,35 +176,81 @@ def validate_ledger(agent_ledger, ground_truth_ledger, expected_ledger=None):
 - Detailed trace capture for debugging and analysis
 - Model-agnostic agent interface supporting experimentation
 
-## Learning Progression Assessment
+## Rishi's Learning Journey: M2.5 Assessment
 
-### Technical Independence Evolution
+### Technical Leadership Evolution
 
-**M2.5 demonstrated full technical leadership**:
-- **Architectural decisions**: You drove the task file vs CLI parameter simplification
-- **Debugging ownership**: Independently traced complex serialization issues
-- **Feature implementation**: Built model selection without detailed guidance
-- **Quality assessment**: Identified and fixed edge cases proactively
+**What stood out about Rishi's approach in M2.5**:
 
-### Python Proficiency Growth
+#### **Independent Problem-Solving Confidence**
+- **Task configuration simplification**: When you identified the CLI vs task file confusion, you immediately proposed removing the parameter entirely rather than trying to make both work. This shows **product thinking** - choosing simplicity over flexibility when complexity doesn't add value.
+- **Debugging ownership**: During the JSON serialization issues, you didn't just describe symptoms - you systematically traced through the pipeline to isolate root causes. This demonstrates **senior-level debugging methodology**.
 
-**Current demonstrated capabilities**:
-- **Complex data modeling**: Multi-level Pydantic schemas with validation
-- **API integration**: External service error handling and parameter management
-- **System debugging**: Systematic root cause analysis across multiple layers
-- **Interface design**: Clean abstractions supporting multiple use cases
+#### **Learning Velocity & Pattern Recognition**
+- **Pydantic serialization mastery**: You quickly grasped the subtle difference between `model_dump(mode='json')` vs `model_dump_json()` and applied it systematically across the codebase. This shows you're not just fixing individual bugs but understanding underlying patterns.
+- **Interface design intuition**: The model selection feature showed clean parameter threading through multiple layers - you understood how to evolve interfaces without breaking existing functionality.
 
-**Professional readiness**: You're now comfortable with **intermediate-to-advanced Python development patterns** including complex serialization, API integration, and systematic debugging.
+#### **Quality-First Mindset**
+- **Comprehensive testing approach**: You consistently ran test suites after changes and proactively suggested fixes when things broke. This demonstrates internalized quality practices.
+- **Edge case anticipation**: Adding None checks for model parameters shows you're thinking about boundary conditions, not just happy path scenarios.
 
-### AI/LLM Understanding Development
+### Python Development Proficiency Growth
 
-**Key insights gained**:
-1. **Mathematical vs Creative**: LLMs have different strengths for different task types
-2. **Constraint adherence**: Sophisticated models can be worse at following simple rules
-3. **Evaluation design**: Testing requires ground truth and systematic comparison
-4. **Prompt engineering**: Format requirements need to be extremely precise
+**Rishi's progression from M0 → M2.5**:
 
-**This level of LLM behavior understanding is valuable professional knowledge** - many teams building AI products would benefit from these insights.
+#### **M0**: Syntax learner needing guidance on Pydantic basics
+#### **M2.5**: Independent architect making sound design decisions
+
+**Key indicators of proficiency growth**:
+- **Complex state management**: Managing multiple optional fields (ledger generation, model selection, repair validation) across different execution paths
+- **API boundary handling**: Proper error handling for external services with fallback logic
+- **System integration**: Adding features without breaking existing functionality - shows understanding of dependency relationships
+
+**Professional readiness indicator**: You're now making **architectural trade-offs** (like the CLI parameter simplification) rather than just implementing features. This is senior-level thinking.
+
+### Evaluation System Design Understanding
+
+**Rishi's developing insights about eval methodology**:
+
+#### **Mathematical Verification Innovation**
+- **Ground truth comparison**: You understood that testing mathematical reasoning requires comparing against deterministic simulation - not just checking if JSON is valid.
+- **Two-tier validation**: The insight to prefer manually calculated expected results over simulator ground truth shows sophisticated test design thinking.
+
+#### **Constraint Testing Philosophy** 
+- **Error handling evolution**: Moving from "block on any error" to "capture everything, score fairly" demonstrates understanding that evaluation should be comprehensive, not brittle.
+- **Partial credit systems**: You recognized that AI capabilities exist on a spectrum - not just pass/fail.
+
+#### **Research Question Formation**
+The ledger generation capability directly tests **computational accuracy vs pattern matching** - this is exactly the kind of research question that advances AI understanding. You independently identified this as worth measuring.
+
+### Learning Partnership Assessment
+
+**How Rishi engaged with complex technical challenges**:
+
+#### **Question-Driven Discovery**
+- When encountering the JSON serialization bug, you didn't immediately ask for fixes - you proposed debugging strategies and systematically eliminated possibilities
+- The "why are we getting this error?" approach shows you're learning underlying principles, not just collecting solutions
+
+#### **Conceptual Connection Making**
+- You connected the repair label accuracy issue to broader scoring philosophy - understanding that functional success and labeling accuracy are separate dimensions
+- Linking task file configuration to evaluation rigor shows you understand how implementation choices affect research validity
+
+#### **Technical Communication Growth**
+- M0: "This error happened, how do I fix it?"  
+- M2.5: "I think the issue might be X because Y, let me test Z to confirm"
+
+This evolution shows developing **technical hypothesis formation** - crucial for independent problem-solving.
+
+### Meta-Learning Insights
+
+**What Rishi discovered about building evaluation systems**:
+
+1. **Infrastructure enables insights**: Good tracing and error handling made debugging possible when complex issues arose
+2. **Deterministic foundations matter**: The M0 simulation engine was crucial for meaningful mathematical verification  
+3. **AI behavior is counterintuitive**: Discovery that Opus performs worse than Haiku on arithmetic tasks
+4. **Systematic measurement reveals patterns**: Ledger accuracy metrics provided quantitative evidence of AI reasoning limitations
+
+**These insights demonstrate research-level thinking** - understanding how tool building enables scientific discovery.
 
 ## Innovation & Research Contribution
 
