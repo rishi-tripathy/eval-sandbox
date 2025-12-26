@@ -42,22 +42,18 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
         ))
         result.tool_calls += 1
         
-        # Try to parse JSON
+        # Parse draft JSON
         try:
-            draft_json_packaged = json.loads(draft_data)
-            
-            # Handle both wrapped (ledger mode) and direct (no ledger) formats
-            if task.generate_ledger and "scenario" in draft_json_packaged:
-                # Wrapped format: {"scenario": {...}, "ledger": [...]}
-                draft_scenario_json = draft_json_packaged.get("scenario")
-                draft_ledger_json = draft_json_packaged.get("ledger")
-                result.draft_ledger_json = json.dumps(draft_ledger_json)
+            draft_parsed = json.loads(draft_data)
+            if task.generate_ledger:
+                draft_scenario_json = draft_parsed["scenario"]
+                draft_ledger_json = draft_parsed.get("ledger")
+                if draft_ledger_json:
+                    result.draft_ledger_json = json.dumps(draft_ledger_json)
             else:
-                # Direct format: {...scenario...}
-                draft_scenario_json = draft_json_packaged
-                
-            result.scenario_json = draft_scenario_json
-        except json.JSONDecodeError:
+                draft_scenario_json = draft_parsed
+            result.scenario_json = json.dumps(draft_scenario_json)
+        except Exception as e:
             write_trace(trace)
             result.error_category = ErrorCategory.INVALID_JSON
             return result
@@ -67,6 +63,7 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
         scenario = Scenario.model_validate(draft_scenario_json)
         if draft_ledger_json:
             draft_ledger = [MonthlyRecord.model_validate(record) for record in draft_ledger_json]
+    
     except Exception as e:
         write_trace(trace)
         result.error_category = ErrorCategory.SCHEMA_MISMATCH
@@ -90,7 +87,7 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
     
     # Validate draft ledger immediately while we have eval result
     if draft_ledger_json:
-        result.draft_ledger_correct = validate_ledger(draft_ledger_json, eval_result.ledger, task.expected.ledger if task.expected else None)
+        result.draft_ledger_correct = validate_ledger(draft_ledger, eval_result.ledger, task.expected.ledger if task.expected else None)
     
     # Set violation correctness if we have expected results
     if task.expected and task.expected.initial_verdict == "infeasible":
@@ -112,20 +109,33 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
             output=repair_data,
             duration_ms=duration_ms
         ))
+        # Parse repair JSONj
         try:
-            repair_json_packaged = json.loads(repair_data)
-            repair_scenario_json = repair_json_packaged.get("repaired_scenario")
-            
-            result.repair_strategy = repair_json_packaged.get("repair_applied").get("type")
-            result.repair_json = repair_scenario_json
+            repair_parsed = json.loads(repair_data)
+            repair_scenario_json = repair_parsed["repaired_scenario"]
+            result.repair_strategy = repair_parsed["repair_applied"]["type"]
+            result.repair_json = json.dumps(repair_scenario_json)
             if task.generate_ledger:
-                repair_ledger_json = repair_json_packaged.get("ledger")
-                result.repair_ledger_json = json.dumps(repair_ledger_json)
+                repair_ledger_json = repair_parsed.get("ledger")
         except Exception as e:
             write_trace(trace)
             result.error_category = ErrorCategory.INVALID_JSON
             return result
+
+        result.tool_calls += 1
+        result.repair_attempts += 1
+        result.repair_attempted = True
         
+        if repair_scenario_json:
+            try:
+                scenario = Scenario.model_validate(repair_scenario_json)
+                if repair_ledger_json:
+                    repair_ledger = [MonthlyRecord.model_validate(record) for record in repair_ledger_json]
+            except Exception as e:
+                write_trace(trace)
+                result.error_category = ErrorCategory.SCHEMA_MISMATCH
+                return result
+
         if result.repair_strategy not in ["baseline_reduction", "event_amount_adjustment", "event_timing_shift"]:
             write_trace(trace)
             result.error_category = ErrorCategory.INACCURATE_REPAIR_LABEL
@@ -136,40 +146,25 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
             result.error_category = ErrorCategory.INACCURATE_REPAIR_LABEL
             return result
 
+        start_time = time.time()
+        eval_repair_result = run_eval(scenario)
         duration_ms = int((time.time()-start_time)*1000)
 
-        result.tool_calls += 1
-        result.repair_attempts += 1
-        result.repair_attempted = True
+        trace.execution_steps.append(ExecutionStep(
+            step="eval_repair",
+            input=json.dumps(repair_scenario_json),
+            output=eval_repair_result.model_dump(mode='json'),
+            duration_ms=duration_ms
+        ))
         
-        if repair_scenario_json:
-            try:
-                scenario = Scenario.model_validate(repair_scenario_json)
-                if repair_ledger_json:
-                    result.repair_ledger_json = json.dumps(repair_ledger_json)
-            except Exception as e:
-                write_trace(trace)
-                result.error_category = ErrorCategory.SCHEMA_MISMATCH
-                return result
-            
-            start_time = time.time()
-            eval_repair_result = run_eval(scenario)
-            duration_ms = int((time.time()-start_time)*1000)
-
-            trace.execution_steps.append(ExecutionStep(
-                step="eval_repair",
-                input=json.dumps(repair_scenario_json),
-                output=eval_repair_result.model_dump(mode='json'),
-                duration_ms=duration_ms
-            ))
-            
-            # Set repair results immediately
-            result.final_verdict = eval_repair_result.verdict
-            result.repair_made_feasible = eval_repair_result.verdict == "feasible"
-            
-            # Validate repair ledger immediately while we have repair eval result
-            if repair_ledger_json:
-                result.repair_ledger_correct = validate_ledger(repair_ledger_json, eval_repair_result.ledger, task.expected.ledger if task.expected else None)
+        # Set repair results immediately
+        result.final_verdict = eval_repair_result.verdict
+        result.repair_made_feasible = eval_repair_result.verdict == "feasible"
+        
+        # Validate repair ledger immediately while we have repair eval result
+        if repair_ledger_json:
+            result.repair_ledger_correct = validate_ledger(repair_ledger, eval_repair_result.ledger, task.expected.ledger if task.expected else None)
+    
     else:
         # No repair attempted, final state same as initial
         result.final_verdict = result.initial_verdict
@@ -250,7 +245,7 @@ def write_trace(trace: Trace):
         raise e
     return
     
-def validate_ledger(ledger_json: Optional[list], ground_truth_ledger: List[MonthlyRecord], expected_ledger: Optional[list] = None) -> Optional[bool]:
+def validate_ledger(ledger_json: List[MonthlyRecord], ground_truth_ledger: List[MonthlyRecord], expected_ledger: Optional[List[MonthlyRecord]] = None) -> bool:
     """
     Validate ledger accuracy in two ways:
     1. If expected_ledger provided: Compare against expected
