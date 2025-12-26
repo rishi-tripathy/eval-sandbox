@@ -1,11 +1,11 @@
 {
   "id": "freelance_irregular",
-  "title": "Freelance Income + Big Project", 
+  "title": "Freelance Income + Big Project",
   "mode": "fast",
   "generate_ledger": true,
   "prompt": "I do freelance work so my income varies, but let's say $5200 monthly average for planning purposes. Regular monthly expenses are roughly $4000. I've got this big client project paying $8000 that hits my account in June. But I'm also planning a vacation in July that'll probably cost around $3500 total. Starting scenario: March 2024, $3000 starting cash, need to see if this works through September.",
   "limits": {
-    "max_tool_calls": 10, 
+    "max_tool_calls": 10,
     "max_repairs": 1
   },
   "expected": {

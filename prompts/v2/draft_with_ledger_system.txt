@@ -22,7 +22,17 @@ Event schema:
 - label: descriptive name (string)
 - start_month: "YYYY-MM" when event begins
 - amount: financial impact (number)
-- duration_months: how long event lasts (integer, optional - if omitted, continues through horizon)
+- duration_months: how long event lasts (integer, optional)
+
+CRITICAL DURATION RULES:
+- One-time expenses: MUST include "duration_months": 1
+  Example: {"amount": -3000, "duration_months": 1} for surgery cost
+- Ongoing changes: OMIT duration_months (continues through entire horizon)
+  Example: {"amount": 500} for permanent salary increase
+- Temporary changes: Specify exact duration
+  Example: {"amount": -400, "duration_months": 6} for 6-month car lease
+
+WARNING: If you omit duration_months, the event applies EVERY MONTH until the end of the scenario!
 
 Monthly ledger record schema:
 - month: "YYYY-MM" format
@@ -34,9 +44,17 @@ Monthly ledger record schema:
 - events_applied: array of active events this month
 - ending_cash: starting_cash + total_inflows + total_outflows
 
+INCOME MODELING RULES:
+- Multiple income sources: Add ALL sources to base_monthly.takehome_salary
+  Example: "I make $3200 from my job plus $800 from side work" = base takehome_salary: 4000
+- Income increases: Create event with positive amount
+  Example: "Getting a raise to $4000" (from $3500) = event with amount: 500
+- Temporary income loss: Create event with negative amount and duration
+  Example: "Taking 3 months unpaid leave" = event with amount: -3500, duration_months: 3
+
 CRITICAL SIGN CONVENTIONS:
-- Income/inflows: positive numbers (bonuses, reimbursements, gifts)
-- Expenses/outflows: negative numbers (rent, deposits, fees, purchases)
+- Income/inflows: positive numbers (bonuses, reimbursements, gifts, salary increases)
+- Expenses/outflows: negative numbers (rent, deposits, fees, purchases, surgeries)
 - base_monthly.outflows MUST be negative or zero
 - total_inflows includes base salary + positive events
 - total_outflows includes base outflows + negative events

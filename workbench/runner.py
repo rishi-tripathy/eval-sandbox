@@ -180,12 +180,12 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     elif result.repair_attempts > task.limits.max_repairs:
         result.error_category = ErrorCategory.EXCEEDED_MAX_REPAIRS
 
+    elif result.verdict_correct is not None and result.verdict_correct is False:
+        result.error_category = ErrorCategory.WRONG_VERDICT
+        
     elif eval_result.verdict == "infeasible" and result.final_verdict == "infeasible" and result.repair_made_feasible is False:
         result.error_category = ErrorCategory.REPAIR_FAILED
 
-    elif result.verdict_correct is not None and result.verdict_correct is False:
-        result.error_category = ErrorCategory.WRONG_VERDICT
-    
     elif result.first_violation_month_correct is not None and result.first_violation_month_correct is False:
         result.error_category = ErrorCategory.WRONG_FIRST_VIOLATION_MONTH
     
