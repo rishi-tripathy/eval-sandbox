@@ -36,18 +36,18 @@ class ErrorCategory(Enum):
     NO_TOOL_USE = "NO_TOOL_USE"  # tool_calls == 0 when task requires at least 1 (always, in v1)
     EARLY_STOP = "EARLY_STOP"  # stopped before running run_eval at least once
     INACCURATE_REPAIR_LABEL = "INACCURATE_REPAIR_LABEL"  # repair label does not match issued repair type
-
 class TaskResult(BaseModel):
     task_id: str
     scenario_json: dict = None
     repair_json: Optional[dict] = None
-
+    draft_ledger_json: Optional[str] = None
+    repair_ledger_json: Optional[str] = None
+    
     # Run results
     initial_verdict: str
     final_verdict: str
     first_violation_month: Optional[str] = None
     violated_invariant: Optional[InvariantType] = None
-    ledger: Optional[List[MonthlyRecord]] = None
     
     # Metrics
     tool_calls: int = 0
@@ -57,9 +57,12 @@ class TaskResult(BaseModel):
     verdict_correct: Optional[bool] = None
     first_violation_month_correct: Optional[bool] = None
     violation_correct: Optional[bool] = None
+    draft_ledger_correct: Optional[bool] = None
+    
     repair_attempted: bool = False
     repair_made_feasible: Optional[bool] = None
     repair_strategy: Optional[str] = None
+    repair_ledger_correct: Optional[bool] = None
 
     #Taxonomy
     error_category: Optional[ErrorCategory] = None

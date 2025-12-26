@@ -12,6 +12,7 @@ class EvalResult(BaseModel):
     violated_invariant: Optional[InvariantType] = None
     ledger_summary: dict[str, Any]
     violations: List[Violation]
+    ledger: List[MonthlyRecord]  # Full monthly records for validation
     
     class Config:
         arbitrary_types_allowed = True
@@ -29,7 +30,8 @@ def run_eval(scenario: Scenario) -> EvalResult:
               first_violation_month=None,
               violated_invariant=None,
               ledger_summary={'min_cash': 0, 'ending_cash': 0, 'months_simulated': 0},
-              violations=[]
+              violations=[],
+              ledger=[]
           )
 
     violations = check_invariants(scenario, records) or []
@@ -49,7 +51,8 @@ def run_eval(scenario: Scenario) -> EvalResult:
         first_violation_month=first_violation.month.to_string(),
         violated_invariant=first_violation.invariant,
         ledger_summary=summary,
-        violations=violations
+        violations=violations,
+        ledger=records
     )
 
     return EvalResult(
@@ -57,6 +60,7 @@ def run_eval(scenario: Scenario) -> EvalResult:
         first_violation_month=None,
         violated_invariant=None,
         ledger_summary=summary,
-        violations=violations
+        violations=violations,
+        ledger=records
     )
     

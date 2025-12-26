@@ -1,7 +1,8 @@
 from workbench.task_types import Task, TaskResult
-from workbench.types import Scenario
+from workbench.types import Scenario, MonthlyRecord
 from workbench.models.agents import get_agent
 from workbench.eval import run_eval
+from typing import List, Optional
 import json
 from workbench.task_types import ErrorCategory
 from workbench.trace_types import Trace, ExecutionStep
@@ -11,58 +12,58 @@ import uuid
 import os
 
 
-def run_task(task_path: str, model: str = "stub", session_id: str = None) -> TaskResult:
+def run_task(task_path: str, model: str = "claude", session_id: str = None, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> TaskResult:
     task = Task.model_validate_json(open(task_path).read())
     if session_id is None:
           session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
-    trace = init_trace(task.id, model, task.prompt, session_id)
-    
+    trace = init_trace(task.id, model, task.prompt, session_id)    
     agent = get_agent(model)
-    tool_calls = 0
-    repair_attempts = 0
-    scenario_json = None
-    repair_scenario_json = None
 
+    draft_ledger_json = None
+    repair_ledger_json = None
+
+    result = TaskResult( 
+        task_id=task.id,
+        initial_verdict="error",
+        final_verdict="error",
+    )
+    
     # Try to draft scenario
     try:
         start_time = time.time()
-        scenario_json = agent.draft(task.prompt, task.mode)
+        draft_data = agent.draft(task.prompt, task.mode, generate_ledger, prompt_dir)
         duration_ms = int((time.time()-start_time)*1000)
 
         trace.execution_steps.append(ExecutionStep(
             step="draft",
             input=task.prompt,
-            output=scenario_json,
+            output=draft_data,
             duration_ms=duration_ms
         ))
-        tool_calls += 1
+        result.tool_calls += 1
         
         # Try to parse JSON
         try:
-            json.loads(scenario_json)
+            draft_json_packaged = json.loads(draft_data)
+            draft_scenario_json = draft_json_packaged.get("scenario")
+            result.scenario_json = draft_scenario_json            
+            if generate_ledger:
+                draft_ledger_json = draft_json_packaged.get("ledger")
+                result.draft_ledger_json = json.dumps(draft_ledger_json)
         except json.JSONDecodeError:
             write_trace(trace)
-            return TaskResult(
-                task_id=task.id,
-                scenario_json={},
-                initial_verdict="error",
-                final_verdict="error",
-                tool_calls=tool_calls,
-                error_category=ErrorCategory.INVALID_JSON
-            )
+            result.error_category = ErrorCategory.INVALID_JSON
+            return result
+            
         
         # Try to validate schema
-        scenario = Scenario.model_validate_json(scenario_json)
+        scenario = Scenario.model_validate(draft_scenario_json)
+        if draft_ledger_json:
+            draft_ledger = [MonthlyRecord.model_validate(record) for record in draft_ledger_json]
     except Exception as e:
         write_trace(trace)
-        return TaskResult(
-            task_id=task.id,
-            scenario_json={},
-            initial_verdict="error",
-            final_verdict="error",
-            tool_calls=tool_calls,
-            error_category=ErrorCategory.SCHEMA_MISMATCH
-        )
+        result.error_category = ErrorCategory.SCHEMA_MISMATCH
+        return result
     
     start_time = time.time()
     eval_result = run_eval(scenario)
@@ -70,139 +71,130 @@ def run_task(task_path: str, model: str = "stub", session_id: str = None) -> Tas
 
     trace.execution_steps.append(ExecutionStep(
         step="eval_initial",
-        input=scenario_json,
+        input=scenario.model_dump(mode='json'),
         output=eval_result.model_dump(mode='json'),
         duration_ms=duration_ms
     ))
 
-    final_result = eval_result
-    repair_type = None
+    # Set initial eval results immediately
+    result.initial_verdict = eval_result.verdict
+    result.first_violation_month = eval_result.first_violation_month
+    result.violated_invariant = eval_result.violated_invariant
+    
+    # Validate draft ledger immediately while we have eval result
+    if draft_ledger_json:
+        result.draft_ledger_correct = validate_ledger(draft_ledger_json, eval_result.ledger, task.expected.ledger if task.expected else None)
+    
+    # Set violation correctness if we have expected results
+    if task.expected and task.expected.initial_verdict == "infeasible":
+        result.violation_correct = eval_result.violated_invariant == task.expected.violated_invariant
+        result.first_violation_month_correct = eval_result.first_violation_month == task.expected.first_violation_month
+    
+    # Set verdict correctness
+    result.verdict_correct = eval_result.verdict == task.expected.initial_verdict if task.expected else None
+
+    eval_repair_result = eval_result
 
     if eval_result.verdict == "infeasible": #begin repair loop
         start_time = time.time()
-        repair_data = agent.repair(scenario_json, eval_result.model_dump())
+        repair_data = agent.repair(scenario.model_dump(mode='json'), eval_result.model_dump(mode='json'), generate_ledger, prompt_dir)
         duration_ms = int((time.time()-start_time)*1000)
         trace.execution_steps.append(ExecutionStep(
             step="repair",
-            input=scenario_json,
+            input=scenario.model_dump(mode='json'),
             output=repair_data,
             duration_ms=duration_ms
         ))
         try:
             repair_json_packaged = json.loads(repair_data)
-            repair_type = repair_json_packaged.get("repair_applied").get("type")
-            repair_scenario_json = json.dumps(repair_json_packaged.get("repaired_scenario"))
+            repair_scenario_json = repair_json_packaged.get("repaired_scenario")
+            
+            result.repair_strategy = repair_json_packaged.get("repair_applied").get("type")
+            result.repair_json = repair_scenario_json
+            if generate_ledger:
+                repair_ledger_json = repair_json_packaged.get("ledger")
+                result.repair_ledger_json = json.dumps(repair_ledger_json)
         except Exception as e:
             write_trace(trace)
-            return TaskResult(
-                task_id=task.id,
-                scenario_json={},
-                initial_verdict="error",
-                final_verdict="error",
-                tool_calls=tool_calls,
-                error_category=ErrorCategory.INVALID_JSON
-            )
+            result.error_category = ErrorCategory.INVALID_JSON
+            return result
         
-        if repair_type not in ["baseline_reduction", "event_amount_adjustment", "event_timing_shift"]:
+        if result.repair_strategy not in ["baseline_reduction", "event_amount_adjustment", "event_timing_shift"]:
             write_trace(trace)
-            return TaskResult(
-                task_id=task.id,
-                scenario_json={},
-                initial_verdict="error",
-                final_verdict="error",
-                tool_calls=tool_calls,
-                error_category=ErrorCategory.INACCURATE_REPAIR_LABEL
-            )
+            result.error_category = ErrorCategory.INACCURATE_REPAIR_LABEL
+            return result
         
-        if not validate_repair_claim(scenario_json, repair_scenario_json, repair_type):
+        if not validate_repair_claim(json.dumps(draft_scenario_json), json.dumps(repair_scenario_json), result.repair_strategy):
             write_trace(trace)
-            return TaskResult(
-                task_id=task.id,
-                scenario_json={},
-                initial_verdict="error",
-                final_verdict="error",
-                tool_calls=tool_calls,
-                error_category=ErrorCategory.INACCURATE_REPAIR_LABEL
-            )
+            result.error_category = ErrorCategory.INACCURATE_REPAIR_LABEL
+            return result
 
         duration_ms = int((time.time()-start_time)*1000)
 
-        tool_calls += 1
-        repair_attempts += 1
+        result.tool_calls += 1
+        result.repair_attempts += 1
+        result.repair_attempted = True
+        
         if repair_scenario_json:
             try:
-                scenario = Scenario.model_validate_json(repair_scenario_json)
+                scenario = Scenario.model_validate(repair_scenario_json)
+                if repair_ledger_json:
+                    result.repair_ledger_json = json.dumps(repair_ledger_json)
             except Exception as e:
                 write_trace(trace)
-                return TaskResult(
-                    task_id=task.id,
-                    scenario_json={},
-                    initial_verdict="error",
-                    final_verdict="error",
-                    tool_calls=tool_calls,
-                    error_category=ErrorCategory.SCHEMA_MISMATCH
-                )
+                result.error_category = ErrorCategory.SCHEMA_MISMATCH
+                return result
+            
             start_time = time.time()
-            final_result = run_eval(scenario)
+            eval_repair_result = run_eval(scenario)
             duration_ms = int((time.time()-start_time)*1000)
 
             trace.execution_steps.append(ExecutionStep(
                 step="eval_repair",
-                input=repair_scenario_json,
-                output=final_result.model_dump(mode='json'),
+                input=json.dumps(repair_scenario_json),
+                output=eval_repair_result.model_dump(mode='json'),
                 duration_ms=duration_ms
             ))
+            
+            # Set repair results immediately
+            result.final_verdict = eval_repair_result.verdict
+            result.repair_made_feasible = eval_repair_result.verdict == "feasible"
+            
+            # Validate repair ledger immediately while we have repair eval result
+            if repair_ledger_json:
+                result.repair_ledger_correct = validate_ledger(repair_ledger_json, eval_repair_result.ledger, task.expected.ledger if task.expected else None)
+    else:
+        # No repair attempted, final state same as initial
+        result.final_verdict = result.initial_verdict
+        result.repair_attempted = False
 
-    # Only calculate violation metrics for infeasible scenarios
-    violation_correct = None
-    first_violation_month_correct = None
-    if task.expected and task.expected.initial_verdict == "infeasible":
-        violation_correct = eval_result.violated_invariant == task.expected.violated_invariant
-        first_violation_month_correct = eval_result.first_violation_month == task.expected.first_violation_month
-
-    task_result = TaskResult(
-        task_id=task.id,
-        scenario_json=json.loads(scenario_json),
-        repair_json=json.loads(repair_scenario_json) if repair_scenario_json else None,
-        initial_verdict=eval_result.verdict,
-        final_verdict=final_result.verdict,
-        first_violation_month=final_result.first_violation_month,
-        violated_invariant=final_result.violated_invariant,
-        tool_calls=tool_calls,
-        repair_attempts=repair_attempts,
-        verdict_correct=eval_result.verdict == task.expected.initial_verdict if task.expected else None,
-        first_violation_month_correct=first_violation_month_correct,
-        violation_correct=violation_correct,
-        repair_attempted=repair_scenario_json is not None,
-        repair_made_feasible=final_result.verdict == "feasible" if repair_scenario_json else None,
-        repair_strategy=repair_type,
-        error_category=None
-    )
-
-    if tool_calls == 0:
-        task_result.error_category = ErrorCategory.NO_TOOL_USE
-
-    elif tool_calls > task.limits.max_tool_calls:
-        task_result.error_category = ErrorCategory.EXCEEDED_MAX_TOOL_CALLS
+    # Ledger validation completed during eval steps above
     
-    elif repair_attempts > task.limits.max_repairs:
-        task_result.error_category = ErrorCategory.EXCEEDED_MAX_REPAIRS
 
-    elif eval_result.verdict == "infeasible" and task_result.final_verdict == "infeasible" and task_result.repair_made_feasible is False:
-        task_result.error_category = ErrorCategory.REPAIR_FAILED
+    if result.tool_calls == 0:
+        result.error_category = ErrorCategory.NO_TOOL_USE
 
-    elif task_result.verdict_correct is not None and task_result.verdict_correct is False:
-        task_result.error_category = ErrorCategory.WRONG_VERDICT
+    elif result.tool_calls > task.limits.max_tool_calls:
+        result.error_category = ErrorCategory.EXCEEDED_MAX_TOOL_CALLS
     
-    elif task_result.first_violation_month_correct is not None and task_result.first_violation_month_correct is False:
-        task_result.error_category = ErrorCategory.WRONG_FIRST_VIOLATION_MONTH
+    elif result.repair_attempts > task.limits.max_repairs:
+        result.error_category = ErrorCategory.EXCEEDED_MAX_REPAIRS
+
+    elif eval_result.verdict == "infeasible" and result.final_verdict == "infeasible" and result.repair_made_feasible is False:
+        result.error_category = ErrorCategory.REPAIR_FAILED
+
+    elif result.verdict_correct is not None and result.verdict_correct is False:
+        result.error_category = ErrorCategory.WRONG_VERDICT
     
-    elif task_result.violation_correct is not None and task_result.violation_correct is False:
-        task_result.error_category = ErrorCategory.WRONG_VIOLATION
+    elif result.first_violation_month_correct is not None and result.first_violation_month_correct is False:
+        result.error_category = ErrorCategory.WRONG_FIRST_VIOLATION_MONTH
     
-    trace.final_result = task_result.model_dump(mode='json')
+    elif result.violation_correct is not None and result.violation_correct is False:
+        result.error_category = ErrorCategory.WRONG_VIOLATION
+    
+    trace.final_result = result
     write_trace(trace)
-    return task_result
+    return result
 
 def init_trace(task_id: str, model: str, prompt: str, session_id: str) -> Trace:
     return Trace(
@@ -251,7 +243,21 @@ def write_trace(trace: Trace):
         raise e
     return
     
+def validate_ledger(ledger_json: Optional[list], ground_truth_ledger: List[MonthlyRecord], expected_ledger: Optional[list] = None) -> Optional[bool]:
+    """
+    Validate ledger accuracy in two ways:
+    1. If expected_ledger provided: Compare against expected
+    2. Otherwise: Compare against ground_truth_ledger from simulator
+    3. Return True only if ledger matches the appropriate baseline
+    """
+    if not ledger_json:
+        return None
+        
+    # TODO: Implement validation logic
+    return None
+
 def validate_repair_claim(original_json: str, repaired_json: str, claimed_type: str) -> bool:
+
     original = json.loads(original_json)
     repaired = json.loads(repaired_json)
 
