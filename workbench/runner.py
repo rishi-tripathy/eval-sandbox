@@ -2,6 +2,7 @@ from workbench.task_types import Task, TaskResult
 from workbench.types import Scenario, MonthlyRecord
 from workbench.models.agents import get_agent
 from workbench.eval import run_eval
+from workbench.scoring import update_result_with_score
 from typing import List, Optional
 import json
 from workbench.task_types import ErrorCategory
@@ -191,6 +192,9 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     
     elif result.violation_correct is not None and result.violation_correct is False:
         result.error_category = ErrorCategory.WRONG_VIOLATION
+    
+    # Calculate overall score
+    result = update_result_with_score(result, task)
     
     trace.final_result = result
     write_trace(trace)

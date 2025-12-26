@@ -66,3 +66,8 @@ class TaskResult(BaseModel):
 
     #Taxonomy
     error_category: Optional[ErrorCategory] = None
+    
+    # Overall scoring
+    score_earned: Optional[int] = None
+    score_possible: Optional[int] = None
+    score_percentage: Optional[float] = None

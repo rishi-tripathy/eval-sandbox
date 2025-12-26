@@ -1,0 +1,14 @@
+{
+  "id": "simple_bonus",
+  "title": "Simple Bonus Scenario - Minimal Complexity",
+  "mode": "fast",
+  "generate_ledger": true,
+  "prompt": "Pretty straightforward situation here. I make $4000 monthly, spend about $3700. Getting a bonus of $2000 in March. Starting February 2024 with $1500, planning for 4 months total.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible"
+  }
+}

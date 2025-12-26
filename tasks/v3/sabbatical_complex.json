@@ -1,0 +1,15 @@
+{
+  "id": "sabbatical_complex", 
+  "title": "Sabbatical Planning - Duration Events",
+  "mode": "fast",
+  "generate_ledger": true,
+  "prompt": "I'm planning a 3-month sabbatical from July to September where I won't have my regular income. Normally I make $5500 monthly with $4200 in expenses. During the sabbatical I'll have reduced expenses of about $3000 per month since I won't be commuting or buying work clothes. But I want to take a big trip in August that'll cost around $4500. I'm also getting a sabbatical bonus of $3000 in June before I leave. Currently have $8000 saved. Planning timeline: June 2024 through October 2024.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "infeasible",
+    "violated_invariant": "LIQUIDITY_FLOOR"
+  }
+}

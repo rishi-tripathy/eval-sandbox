@@ -51,8 +51,10 @@ def run_suite(
     typer.echo(f"Found {len(task_files)} tasks")
     session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M_%S')}_{str(uuid.uuid4())[:8]}"
     total_tasks = 0;
-    feasible_tasks = 0;
-    infeasible_tasks = 0;
+    initially_feasible_tasks = 0;
+    initially_infeasible_tasks = 0;
+    final_feasible_tasks = 0;
+    final_infeasible_tasks = 0;
     tasks_with_repair = 0;
     error_tasks = 0;
 
@@ -60,6 +62,16 @@ def run_suite(
     tasks_with_correct_violation = 0
     tasks_with_correct_first_violation_month = 0
     repairs_made_feasible = 0
+    
+    # Ledger tracking
+    tasks_with_draft_ledger = 0
+    tasks_with_repair_ledger = 0
+    draft_ledgers_correct = 0
+    repair_ledgers_correct = 0
+    
+    # Score tracking
+    total_score_earned = 0
+    total_score_possible = 0
     
     # Repair strategy tracking
     repair_strategies = {}
@@ -84,14 +96,33 @@ def run_suite(
                 # Skip this task and continue  
                 continue
             total_tasks += 1
+            
+            # Count initial and final verdicts separately
+            if result.initial_verdict == "feasible":
+                initially_feasible_tasks += 1
+            elif result.initial_verdict == "infeasible":
+                initially_infeasible_tasks += 1
+                
             if result.final_verdict == "feasible":
-                feasible_tasks += 1
+                final_feasible_tasks += 1
             elif result.final_verdict == "infeasible":
-                infeasible_tasks += 1
+                final_infeasible_tasks += 1
+                
             if result.error_category is not None:
                 error_tasks += 1
             if result.repair_attempts > 0:
                 tasks_with_repair += 1
+            
+            # Ledger accuracy tracking
+            if result.draft_ledger_json is not None:
+                tasks_with_draft_ledger += 1
+                if result.draft_ledger_correct:
+                    draft_ledgers_correct += 1
+                    
+            if result.repair_ledger_json is not None:
+                tasks_with_repair_ledger += 1
+                if result.repair_ledger_correct:
+                    repair_ledgers_correct += 1
             
             if result.verdict_correct:
                 tasks_with_correct_verdict += 1
@@ -101,6 +132,11 @@ def run_suite(
                 repairs_made_feasible += 1
             if result.first_violation_month_correct:
                 tasks_with_correct_first_violation_month += 1
+            
+            # Score tracking
+            if result.score_earned is not None and result.score_possible is not None:
+                total_score_earned += result.score_earned
+                total_score_possible += result.score_possible
                 
             # Track repair strategies
             if result.repair_strategy:
@@ -114,17 +150,33 @@ def run_suite(
             repair_strategy_lines = "\n".join([f"            {strategy}: {count}" for strategy, count in repair_strategies.items()])
             error_category_lines = "\n".join([f"            {error}: {count}" for error, count in error_categories.items()])
             
+            # Calculate ledger accuracy percentages
+            draft_accuracy = f"{draft_ledgers_correct}/{tasks_with_draft_ledger}" if tasks_with_draft_ledger > 0 else "N/A"
+            repair_accuracy = f"{repair_ledgers_correct}/{tasks_with_repair_ledger}" if tasks_with_repair_ledger > 0 else "N/A"
+            
+            # Calculate overall score percentage
+            overall_score_pct = round((total_score_earned / total_score_possible * 100), 1) if total_score_possible > 0 else 0
+            
             session_summary = f"""
             Session summary:
             total_tasks: {total_tasks}
-            feasible_tasks: {feasible_tasks}
-            infeasible_tasks: {infeasible_tasks}
+            initially_feasible_tasks: {initially_feasible_tasks}
+            initially_infeasible_tasks: {initially_infeasible_tasks}
+            final_feasible_tasks: {final_feasible_tasks}
+            final_infeasible_tasks: {final_infeasible_tasks}
             tasks_with_repair: {tasks_with_repair}
             repairs_made_feasible: {repairs_made_feasible}
             tasks_with_correct_verdict: {tasks_with_correct_verdict}
             tasks_with_correct_violation: {tasks_with_correct_violation}
             tasks_with_correct_first_violation_month: {tasks_with_correct_first_violation_month}
             error_tasks: {error_tasks}
+            
+            Overall Score:
+            total_score: {total_score_earned}/{total_score_possible} ({overall_score_pct}%)
+            
+            Ledger accuracy:
+            draft_ledger_accuracy: {draft_accuracy}
+            repair_ledger_accuracy: {repair_accuracy}
             
             Repair strategies used:
 {repair_strategy_lines or "            (none)"}

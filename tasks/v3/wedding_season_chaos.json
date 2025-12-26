@@ -1,0 +1,15 @@
+{
+  "id": "wedding_season_chaos",
+  "title": "Wedding Season - Multiple Events",
+  "mode": "fast", 
+  "generate_ledger": false,
+  "prompt": "So I make about $4200 monthly and usually spend around $3500 on everything. The thing is, my best friend's getting married in June and I'm in the wedding party - that's going to be like $2000 for the dress, bachelorette, gifts, everything. Then my cousin's wedding is in August, probably another $1500 for that whole thing. Oh and somewhere in there I need to get my car fixed - the mechanic said probably $2500 but I can probably put that off until July if needed. Starting May 2024 with $4000 saved up, want to see how this plays out through October.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "infeasible",
+    "violated_invariant": "LIQUIDITY_FLOOR"
+  }
+}
