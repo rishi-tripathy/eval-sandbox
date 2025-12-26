@@ -117,6 +117,8 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
             result.repair_strategy = repair_parsed["repair_applied"]["type"]
             result.repair_json = json.dumps(repair_scenario_json)
             repair_ledger_json = repair_parsed.get("ledger") if task.generate_ledger else None
+            if repair_ledger_json:
+                result.repair_ledger_json = json.dumps(repair_ledger_json)
         except Exception as e:
             write_trace(trace)
             result.error_category = ErrorCategory.INVALID_JSON

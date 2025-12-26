@@ -113,8 +113,17 @@ Example repair format with ledger - you should use whichever repair type fits th
   ]
 }
 
-Remember: 
+CRITICAL REQUIREMENTS:
+- You MUST include the "ledger" array in your JSON response
+- The ledger must show month-by-month calculations for the repaired scenario
+- Apply only ONE repair mechanism (event_timing_shift, baseline_reduction, or event_amount_adjustment)  
 - Maintain all sign conventions (outflows negative, income positive)
-- Apply only ONE change
 - Show that your repair keeps cash ≥ 0 in every month
 - Return ONLY JSON - any other text causes system failure
+
+REQUIRED JSON STRUCTURE:
+{
+  "repaired_scenario": { /* scenario JSON */ },
+  "repair_applied": { "type": "...", "changes": "..." },
+  "ledger": [ /* REQUIRED: monthly calculation records */ ]
+}
