@@ -5,15 +5,15 @@ from anthropic import Anthropic
 from workbench.models.format_utils import format_eval_failure
 
 class BaseAgent:
-    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
+    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = None) -> str:
         raise NotImplementedError
     
-    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
+    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = None) -> str:
         raise NotImplementedError
 
 class StubAgent(BaseAgent):
-    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
-        return json.dumps({
+    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = None) -> str:
+        scenario = {
             "id": "stub_scenario",
             "title": "Stub scenario",
             "start_month": "2024-01",
@@ -26,42 +26,101 @@ class StubAgent(BaseAgent):
                 "outflows": -4000
             },
             "events": []
-        })
+        }
+        
+        if generate_ledger:
+            return json.dumps({
+                "scenario": scenario,
+                "ledger": [
+                    {
+                        "month": "2024-01",
+                        "starting_cash": 5000,
+                        "base_takehome_salary": 2000,
+                        "base_outflows": -4000,
+                        "total_inflows": 2000,
+                        "total_outflows": -4000,
+                        "events_applied": [],
+                        "ending_cash": 3000
+                    }
+                ]
+            })
+        else:
+            return json.dumps(scenario)
     
-    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
-        return json.dumps({
-            "id": "stub_scenario",
-            "title": "Stub scenario",
-            "start_month": "2024-01",
-            "horizon_months": 12,
-            "initial_state": {
-                "starting_cash": 5000
-            },
-            "base_monthly": {
-                "takehome_salary": 2000,
-                "outflows": -1000
-            },
-            "events": []
-        })
+    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = None) -> str:
+        if generate_ledger:
+            return json.dumps({
+                "repaired_scenario": {
+                    "id": "stub_scenario",
+                    "title": "Stub scenario",
+                    "start_month": "2024-01",
+                    "horizon_months": 12,
+                    "initial_state": {
+                        "starting_cash": 5000
+                    },
+                    "base_monthly": {
+                        "takehome_salary": 2000,
+                        "outflows": -1000
+                    },
+                    "events": []
+                },
+                "repair_applied": {
+                    "type": "baseline_reduction",
+                    "changes": "Reduced baseline outflows from -4000 to -1000"
+                },
+                "ledger": [
+                    {
+                        "month": "2024-01",
+                        "starting_cash": 5000,
+                        "base_takehome_salary": 2000,
+                        "base_outflows": -1000,
+                        "total_inflows": 2000,
+                        "total_outflows": -1000,
+                        "events_applied": [],
+                        "ending_cash": 6000
+                    }
+                ]
+            })
+        else:
+            return json.dumps({
+                "repaired_scenario": {
+                    "id": "stub_scenario",
+                    "title": "Stub scenario",
+                    "start_month": "2024-01",
+                    "horizon_months": 12,
+                    "initial_state": {
+                        "starting_cash": 5000
+                    },
+                    "base_monthly": {
+                        "takehome_salary": 2000,
+                        "outflows": -1000
+                    },
+                    "events": []
+                },
+                "repair_applied": {
+                    "type": "baseline_reduction",
+                    "changes": "Reduced baseline outflows from -4000 to -1000"
+                }
+            })
 
 
 
 class BadJSONAgent(BaseAgent):
-    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
+    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = None) -> str:
         return "This is not JSON at all!"
     
-    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
+    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = None) -> str:
         return "Still not JSON"
 
 class BadSchemaAgent(BaseAgent):
-    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
+    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = None) -> str:
         return json.dumps({
             "id": "bad_scenario",
             "title": "Missing required fields"
             # Missing all other required fields!
         })
     
-    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
+    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = None) -> str:
         return json.dumps({"id": "still_bad"})
 
 class ClaudeAgent(BaseAgent):
@@ -75,11 +134,14 @@ class ClaudeAgent(BaseAgent):
         self.client = Anthropic(api_key=api_key)
         
     
-    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2"):
+    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = "claude-3-haiku-20240307"):
         self.load_prompts(generate_ledger, prompt_dir)
+        # Use default model if None is passed
+        if model is None:
+            model = "claude-3-haiku-20240307"
         try:
             response = self.client.messages.create(
-                model="claude-3-haiku-20240307",
+                model=model,
                 max_tokens=2500,
                 system=self.draft_system_prompt,
                 messages=[{"role": "user", "content": prompt}]
@@ -90,8 +152,11 @@ class ClaudeAgent(BaseAgent):
             # Let the runner handle errors
             raise e
     
-    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
+    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = "claude-3-haiku-20240307") -> str:
         self.load_prompts(generate_ledger, prompt_dir)
+        # Use default model if None is passed
+        if model is None:
+            model = "claude-3-haiku-20240307"
         try:
             # Format the failure information
             failure_msg = format_eval_failure(eval_result)
@@ -101,7 +166,7 @@ class ClaudeAgent(BaseAgent):
             user_message += f"Failure details:\n{failure_msg}"
             
             response = self.client.messages.create(
-                model="claude-3-haiku-20240307",
+                model=model,
                 max_tokens=2500,
                 system=self.repair_system_prompt,
                 messages=[{"role": "user", "content": user_message}]

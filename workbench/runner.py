@@ -12,7 +12,7 @@ import uuid
 import os
 
 
-def run_task(task_path: str, model: str = "claude", session_id: str = None, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> TaskResult:
+def run_task(task_path: str, model: str = "claude", session_id: str = None, prompt_dir: str = "prompts/v2", model_name: str = None) -> TaskResult:
     task = Task.model_validate_json(open(task_path).read())
     if session_id is None:
           session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
@@ -31,7 +31,7 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
     # Try to draft scenario
     try:
         start_time = time.time()
-        draft_data = agent.draft(task.prompt, task.mode, task.generate_ledger, prompt_dir)
+        draft_data = agent.draft(task.prompt, task.mode, task.generate_ledger, prompt_dir, model_name)
         duration_ms = int((time.time()-start_time)*1000)
 
         trace.execution_steps.append(ExecutionStep(
@@ -101,11 +101,11 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
 
     if eval_result.verdict == "infeasible": #begin repair loop
         start_time = time.time()
-        repair_data = agent.repair(scenario.model_dump(mode='json'), eval_result.model_dump(mode='json'), task.generate_ledger, prompt_dir)
+        repair_data = agent.repair(scenario.model_dump_json(), eval_result.model_dump(mode='json'), task.generate_ledger, prompt_dir, model_name)
         duration_ms = int((time.time()-start_time)*1000)
         trace.execution_steps.append(ExecutionStep(
             step="repair",
-            input=scenario.model_dump(mode='json'),
+            input=scenario.model_dump_json(),
             output=repair_data,
             duration_ms=duration_ms
         ))
@@ -243,18 +243,20 @@ def write_trace(trace: Trace):
         raise e
     return
     
-def validate_ledger(ledger_json: List[MonthlyRecord], ground_truth_ledger: List[MonthlyRecord], expected_ledger: Optional[List[MonthlyRecord]] = None) -> bool:
+def validate_ledger(agent_ledger: List[MonthlyRecord], ground_truth_ledger: List[MonthlyRecord], expected_ledger: Optional[List[MonthlyRecord]] = None) -> bool:
     """
     Validate ledger accuracy in two ways:
     1. If expected_ledger provided: Compare against expected
     2. Otherwise: Compare against ground_truth_ledger from simulator
     3. Return True only if ledger matches the appropriate baseline
     """
-    if not ledger_json:
-        return None
-        
-    # TODO: Implement validation logic
-    return None
+    if not agent_ledger:
+        return False
+    
+    # Prefer expected ledger if provided, otherwise use ground truth
+    target_ledger = expected_ledger if expected_ledger is not None else ground_truth_ledger
+    
+    return agent_ledger == target_ledger
 
 def validate_repair_claim(original_json: str, repaired_json: str, claimed_type: str) -> bool:
 

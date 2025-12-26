@@ -1,0 +1,46 @@
+{
+  "id": "ledger_01_simple_feasible",
+  "title": "Simple feasible scenario - ledger test",
+  "mode": "fast",
+  "generate_ledger": true,
+  "prompt": "Create a financial scenario starting in January 2024, running for 3 months. Starting cash: $2000. Monthly takehome: $3000, baseline expenses: $2500 (monthly outflows). No events.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible",
+    "ledger": [
+      {
+        "month": "2024-01",
+        "starting_cash": 2000.0,
+        "base_takehome_salary": 3000.0,
+        "base_outflows": -2500.0,
+        "total_inflows": 3000.0,
+        "total_outflows": -2500.0,
+        "events_applied": [],
+        "ending_cash": 2500.0
+      },
+      {
+        "month": "2024-02",
+        "starting_cash": 2500.0,
+        "base_takehome_salary": 3000.0,
+        "base_outflows": -2500.0,
+        "total_inflows": 3000.0,
+        "total_outflows": -2500.0,
+        "events_applied": [],
+        "ending_cash": 3000.0
+      },
+      {
+        "month": "2024-03",
+        "starting_cash": 3000.0,
+        "base_takehome_salary": 3000.0,
+        "base_outflows": -2500.0,
+        "total_inflows": 3000.0,
+        "total_outflows": -2500.0,
+        "events_applied": [],
+        "ending_cash": 3500.0
+      }
+    ]
+  }
+}

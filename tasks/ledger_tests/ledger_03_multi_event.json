@@ -1,0 +1,70 @@
+{
+  "id": "ledger_03_multi_event",
+  "title": "Multi-event scenario - ledger test", 
+  "mode": "fast",
+  "generate_ledger": true,
+  "prompt": "Create a financial scenario starting in January 2024, running for 4 months. Starting cash: $1500. Monthly takehome: $2500, baseline expenses: $2000 (monthly outflows). Add a security deposit of $1000 in January and a bonus payment of $800 in March.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible",
+    "ledger": [
+      {
+        "month": "2024-01",
+        "starting_cash": 1500.0,
+        "base_takehome_salary": 2500.0,
+        "base_outflows": -2000.0,
+        "total_inflows": 2500.0,
+        "total_outflows": -3000.0,
+        "events_applied": [
+          {
+            "label": "security_deposit",
+            "start_month": "2024-01",
+            "amount": -1000.0,
+            "duration_months": null
+          }
+        ],
+        "ending_cash": 1000.0
+      },
+      {
+        "month": "2024-02",
+        "starting_cash": 1000.0,
+        "base_takehome_salary": 2500.0,
+        "base_outflows": -2000.0,
+        "total_inflows": 2500.0,
+        "total_outflows": -2000.0,
+        "events_applied": [],
+        "ending_cash": 1500.0
+      },
+      {
+        "month": "2024-03",
+        "starting_cash": 1500.0,
+        "base_takehome_salary": 2500.0,
+        "base_outflows": -2000.0,
+        "total_inflows": 3300.0,
+        "total_outflows": -2000.0,
+        "events_applied": [
+          {
+            "label": "bonus_payment",
+            "start_month": "2024-03",
+            "amount": 800.0,
+            "duration_months": null
+          }
+        ],
+        "ending_cash": 2800.0
+      },
+      {
+        "month": "2024-04",
+        "starting_cash": 2800.0,
+        "base_takehome_salary": 2500.0,
+        "base_outflows": -2000.0,
+        "total_inflows": 2500.0,
+        "total_outflows": -2000.0,
+        "events_applied": [],
+        "ending_cash": 3300.0
+      }
+    ]
+  }
+}

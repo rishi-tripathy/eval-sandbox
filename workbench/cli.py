@@ -16,13 +16,15 @@ app = typer.Typer()
 def run_single(
     task_path: Path = typer.Argument(..., help="Path to task JSON file"),
     model: str = typer.Option("stub", help="Model to use (stub, claude)"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output")
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output"),
+    prompt_dir: str = typer.Option("prompts/v2", "--prompts", help="Directory containing prompt files"),
+    model_name: str = typer.Option(None, "--model-name", help="Name of the model to use")
 ):
     """Run a single task and display results."""
     typer.echo(f"Running task: {task_path}")
     
     session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M_%S')}_{str(uuid.uuid4())[:8]}"
-    result = run_task(str(task_path), model=model, session_id=session_id)
+    result = run_task(str(task_path), model=model, session_id=session_id, prompt_dir=prompt_dir, model_name=model_name)
     
     # Display results
     typer.echo(f"Initial verdict: {result.initial_verdict}")
@@ -40,7 +42,9 @@ def run_single(
 def run_suite(
     task_dir: Path = typer.Argument("tasks/v1", help="Directory containing task files"),
     model: str = typer.Option("stub", help="Model to use (stub, claude)"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output")
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output"),
+    prompt_dir: str = typer.Option("prompts/v2", "--prompts", help="Directory containing prompt files"),
+    model_name: str = typer.Option(None, "--model-name", help="Name of the model to use")
 ):
     """Run all tasks in a directory."""
     task_files = list(task_dir.glob("*.json"))
@@ -67,7 +71,7 @@ def run_suite(
     try:
         for task in task_files:
             try:
-                result = run_task(str(task), model=model, session_id=session_id)
+                result = run_task(str(task), model=model, session_id=session_id, prompt_dir=prompt_dir, model_name=model_name)
                 # Use mode='json' to properly serialize enums
                 try:
                     session_results.append(result.model_dump(mode='json'))
