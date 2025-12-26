@@ -5,14 +5,14 @@ from anthropic import Anthropic
 from workbench.models.format_utils import format_eval_failure
 
 class BaseAgent:
-    def draft(self, prompt: str, mode: str) -> str:
+    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
         raise NotImplementedError
     
-    def repair(self, scenario_json: str, eval_result: dict) -> str:
+    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
         raise NotImplementedError
 
 class StubAgent(BaseAgent):
-    def draft(self, prompt: str, mode: str) -> str:
+    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
         return json.dumps({
             "id": "stub_scenario",
             "title": "Stub scenario",
@@ -28,7 +28,7 @@ class StubAgent(BaseAgent):
             "events": []
         })
     
-    def repair(self, scenario_json: str, eval_result: dict) -> str:
+    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
         return json.dumps({
             "id": "stub_scenario",
             "title": "Stub scenario",
@@ -47,21 +47,21 @@ class StubAgent(BaseAgent):
 
 
 class BadJSONAgent(BaseAgent):
-    def draft(self, prompt: str, mode: str) -> str:
+    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
         return "This is not JSON at all!"
     
-    def repair(self, scenario_json: str, eval_result: dict) -> str:
+    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
         return "Still not JSON"
 
 class BadSchemaAgent(BaseAgent):
-    def draft(self, prompt: str, mode: str) -> str:
+    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
         return json.dumps({
             "id": "bad_scenario",
             "title": "Missing required fields"
             # Missing all other required fields!
         })
     
-    def repair(self, scenario_json: str, eval_result: dict) -> str:
+    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
         return json.dumps({"id": "still_bad"})
 
 class ClaudeAgent(BaseAgent):
@@ -74,14 +74,9 @@ class ClaudeAgent(BaseAgent):
         # Initialize the Anthropic client
         self.client = Anthropic(api_key=api_key)
         
-        # Load prompts from files
-        prompts_dir = os.path.join(os.path.dirname(__file__), "..", "..", "prompts", "v1")
-        with open(os.path.join(prompts_dir, "draft_system.txt"), "r") as f:
-            self.draft_system_prompt = f.read()
-        with open(os.path.join(prompts_dir, "repair_system.txt"), "r") as f:
-            self.repair_system_prompt = f.read()
     
-    def draft(self, prompt: str, mode: str) -> str:
+    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2"):
+        self.load_prompts(generate_ledger, prompt_dir)
         try:
             response = self.client.messages.create(
                 model="claude-3-haiku-20240307",
@@ -95,7 +90,8 @@ class ClaudeAgent(BaseAgent):
             # Let the runner handle errors
             raise e
     
-    def repair(self, scenario_json: str, eval_result: dict) -> str:
+    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2") -> str:
+        self.load_prompts(generate_ledger, prompt_dir)
         try:
             # Format the failure information
             failure_msg = format_eval_failure(eval_result)
@@ -116,6 +112,19 @@ class ClaudeAgent(BaseAgent):
         except Exception as e:
             # Let the runner handle errors
             raise e
+    # Load prompts from files
+    def load_prompts(self, generate_ledger: bool = False, prompt_dir: str = "prompts/v2"):
+        if generate_ledger:
+            with open(os.path.join(prompt_dir, "draft_with_ledger_system.txt"), "r") as f:
+                self.draft_system_prompt = f.read()
+            with open(os.path.join(prompt_dir, "repair_with_ledger_system.txt"), "r") as f:
+                self.repair_system_prompt = f.read()
+        else:
+            with open(os.path.join(prompt_dir, "draft_system.txt"), "r") as f:
+                self.draft_system_prompt = f.read()
+            with open(os.path.join(prompt_dir, "repair_system.txt"), "r") as f:
+                self.repair_system_prompt = f.read()
+
 
 def get_agent(model: str) -> BaseAgent:
     if model == "stub":

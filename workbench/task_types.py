@@ -1,12 +1,13 @@
 from pydantic import BaseModel
 from typing import Optional
-from workbench.types import InvariantType
+from workbench.types import InvariantType, MonthlyRecord
+from typing import List
 
 class Expected(BaseModel):
     initial_verdict: str
     first_violation_month: Optional[str] = None
     violated_invariant: Optional[InvariantType] = None
-
+    ledger: Optional[List[MonthlyRecord]] = None
 class Limits(BaseModel):
     max_tool_calls: Optional[int] = 10
     max_repairs: Optional[int] = 1
@@ -17,6 +18,7 @@ class Task(BaseModel):
     mode: str = 'fast' # 'fast' or 'strict'
     prompt: str
     limits: Limits = Limits()
+    generate_ledger: bool = False
     expected: Optional[Expected] = None
 
 from enum import Enum
@@ -45,6 +47,7 @@ class TaskResult(BaseModel):
     final_verdict: str
     first_violation_month: Optional[str] = None
     violated_invariant: Optional[InvariantType] = None
+    ledger: Optional[List[MonthlyRecord]] = None
     
     # Metrics
     tool_calls: int = 0
