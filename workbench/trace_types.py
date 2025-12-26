@@ -16,4 +16,4 @@ class Trace(BaseModel):
     model: str
     prompt: str
     execution_steps: List[ExecutionStep]
-    final_result: Optional[dict] = None #will be TaskResult
+    final_result: Optional[Any] = None

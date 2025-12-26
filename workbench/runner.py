@@ -109,32 +109,17 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
             output=repair_data,
             duration_ms=duration_ms
         ))
-        # Parse repair JSONj
+        # Parse repair JSON
         try:
             repair_parsed = json.loads(repair_data)
             repair_scenario_json = repair_parsed["repaired_scenario"]
             result.repair_strategy = repair_parsed["repair_applied"]["type"]
             result.repair_json = json.dumps(repair_scenario_json)
-            if task.generate_ledger:
-                repair_ledger_json = repair_parsed.get("ledger")
+            repair_ledger_json = repair_parsed.get("ledger") if task.generate_ledger else None
         except Exception as e:
             write_trace(trace)
             result.error_category = ErrorCategory.INVALID_JSON
             return result
-
-        result.tool_calls += 1
-        result.repair_attempts += 1
-        result.repair_attempted = True
-        
-        if repair_scenario_json:
-            try:
-                scenario = Scenario.model_validate(repair_scenario_json)
-                if repair_ledger_json:
-                    repair_ledger = [MonthlyRecord.model_validate(record) for record in repair_ledger_json]
-            except Exception as e:
-                write_trace(trace)
-                result.error_category = ErrorCategory.SCHEMA_MISMATCH
-                return result
 
         if result.repair_strategy not in ["baseline_reduction", "event_amount_adjustment", "event_timing_shift"]:
             write_trace(trace)
@@ -145,6 +130,19 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
             write_trace(trace)
             result.error_category = ErrorCategory.INACCURATE_REPAIR_LABEL
             return result
+
+        try:
+            scenario = Scenario.model_validate(repair_scenario_json)
+            if repair_ledger_json:
+                repair_ledger = [MonthlyRecord.model_validate(record) for record in repair_ledger_json]
+        except Exception as e:
+            write_trace(trace)
+            result.error_category = ErrorCategory.SCHEMA_MISMATCH
+            return result
+
+        result.tool_calls += 1
+        result.repair_attempts += 1
+        result.repair_attempted = True
 
         start_time = time.time()
         eval_repair_result = run_eval(scenario)

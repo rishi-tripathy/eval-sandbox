@@ -80,7 +80,7 @@ class ClaudeAgent(BaseAgent):
         try:
             response = self.client.messages.create(
                 model="claude-3-haiku-20240307",
-                max_tokens=1000,
+                max_tokens=2500,
                 system=self.draft_system_prompt,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -102,7 +102,7 @@ class ClaudeAgent(BaseAgent):
             
             response = self.client.messages.create(
                 model="claude-3-haiku-20240307",
-                max_tokens=1500,
+                max_tokens=2500,
                 system=self.repair_system_prompt,
                 messages=[{"role": "user", "content": user_message}]
             )

@@ -38,8 +38,8 @@ class ErrorCategory(Enum):
     INACCURATE_REPAIR_LABEL = "INACCURATE_REPAIR_LABEL"  # repair label does not match issued repair type
 class TaskResult(BaseModel):
     task_id: str
-    scenario_json: dict = None
-    repair_json: Optional[dict] = None
+    scenario_json: str = None
+    repair_json: Optional[str] = None
     draft_ledger_json: Optional[str] = None
     repair_ledger_json: Optional[str] = None
     
