@@ -31,7 +31,7 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
     # Try to draft scenario
     try:
         start_time = time.time()
-        draft_data = agent.draft(task.prompt, task.mode, generate_ledger, prompt_dir)
+        draft_data = agent.draft(task.prompt, task.mode, task.generate_ledger, prompt_dir)
         duration_ms = int((time.time()-start_time)*1000)
 
         trace.execution_steps.append(ExecutionStep(
@@ -45,11 +45,18 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
         # Try to parse JSON
         try:
             draft_json_packaged = json.loads(draft_data)
-            draft_scenario_json = draft_json_packaged.get("scenario")
-            result.scenario_json = draft_scenario_json            
-            if generate_ledger:
+            
+            # Handle both wrapped (ledger mode) and direct (no ledger) formats
+            if task.generate_ledger and "scenario" in draft_json_packaged:
+                # Wrapped format: {"scenario": {...}, "ledger": [...]}
+                draft_scenario_json = draft_json_packaged.get("scenario")
                 draft_ledger_json = draft_json_packaged.get("ledger")
                 result.draft_ledger_json = json.dumps(draft_ledger_json)
+            else:
+                # Direct format: {...scenario...}
+                draft_scenario_json = draft_json_packaged
+                
+            result.scenario_json = draft_scenario_json
         except json.JSONDecodeError:
             write_trace(trace)
             result.error_category = ErrorCategory.INVALID_JSON
@@ -97,7 +104,7 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
 
     if eval_result.verdict == "infeasible": #begin repair loop
         start_time = time.time()
-        repair_data = agent.repair(scenario.model_dump(mode='json'), eval_result.model_dump(mode='json'), generate_ledger, prompt_dir)
+        repair_data = agent.repair(scenario.model_dump(mode='json'), eval_result.model_dump(mode='json'), task.generate_ledger, prompt_dir)
         duration_ms = int((time.time()-start_time)*1000)
         trace.execution_steps.append(ExecutionStep(
             step="repair",
@@ -111,7 +118,7 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, gene
             
             result.repair_strategy = repair_json_packaged.get("repair_applied").get("type")
             result.repair_json = repair_scenario_json
-            if generate_ledger:
+            if task.generate_ledger:
                 repair_ledger_json = repair_json_packaged.get("ledger")
                 result.repair_ledger_json = json.dumps(repair_ledger_json)
         except Exception as e:
