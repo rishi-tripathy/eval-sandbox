@@ -365,8 +365,8 @@ def run_prompt(
             typer.echo(json.dumps(scenario_obj, indent=2))
 
 
-@app.command()
-def run_comparison(
+@app.command(name="run-comparison")
+def comparison_cli(
     models: str = typer.Option(..., "--models", help="Comma-separated list of models (e.g., claude,claude-tools)"),
     task_sets: str = typer.Option(..., "--task-sets", help="Comma-separated list of task set directories"),
     runs: int = typer.Option(5, "--runs", help="Number of runs per condition"),

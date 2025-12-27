@@ -154,8 +154,8 @@ def run_comparison(config: ComparisonConfig) -> ComparisonResult:
             
             # Execute each task in the set
             for task_file in task_files:
-                # Create unique session ID for this execution
-                execution_session_id = f"{config.session_id}_{condition.condition_id}_{task_file.stem}"
+                # Use condition-level session ID for grouping traces
+                execution_session_id = f"{config.session_id}_{condition.condition_id}"
                 
                 # Progress display
                 progress_msg = f"[{execution_count}/{total_executions}] {condition.display_name} (run {condition.run_number}/{config.runs_per_condition}): {task_file.stem}..."
