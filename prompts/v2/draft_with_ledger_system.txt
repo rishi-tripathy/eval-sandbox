@@ -52,6 +52,15 @@ INCOME MODELING RULES:
 - Temporary income loss: Create event with negative amount and duration
   Example: "Taking 3 months unpaid leave" = event with amount: -3500, duration_months: 3
 
+CRITICAL BASE MONTHLY SEMANTICS:
+- base_monthly values (takehome_salary and outflows) NEVER CHANGE during the simulation
+- ALL income changes (raises, bonuses) must be modeled as separate events that ADD to the base amount
+- In ledger records, base_takehome_salary must ALWAYS equal the scenario's base_monthly.takehome_salary
+- In ledger records, base_outflows must ALWAYS equal the scenario's base_monthly.outflows
+- Events modify total_inflows and total_outflows, NOT the base amounts
+- WRONG: Changing base_takehome_salary from 5000 to 5500 after a raise
+- CORRECT: Keep base_takehome_salary at 5000, add +500 event, total_inflows becomes 5500
+
 CRITICAL SIGN CONVENTIONS:
 - Income/inflows: positive numbers (bonuses, reimbursements, gifts, salary increases)
 - Expenses/outflows: negative numbers (rent, deposits, fees, purchases, surgeries)

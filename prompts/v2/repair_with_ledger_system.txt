@@ -37,6 +37,15 @@ LEDGER CALCULATION RULES:
 - Each month: ending_cash = starting_cash + total_inflows + total_outflows
 - Next month's starting_cash = previous month's ending_cash
 
+CRITICAL BASE MONTHLY SEMANTICS:
+- base_monthly values (takehome_salary and outflows) NEVER CHANGE during the simulation
+- ALL income changes (raises, bonuses) must be modeled as separate events that ADD to the base amount
+- In ledger records, base_takehome_salary must ALWAYS equal the scenario's base_monthly.takehome_salary
+- In ledger records, base_outflows must ALWAYS equal the scenario's base_monthly.outflows
+- Events modify total_inflows and total_outflows, NOT the base amounts
+- WRONG: Changing base_takehome_salary from 5000 to 5500 after a raise
+- CORRECT: Keep base_takehome_salary at 5000, add +500 event, total_inflows becomes 5500
+
 You must:
 1. Choose exactly ONE repair mechanism
 2. Apply it to create a feasible scenario

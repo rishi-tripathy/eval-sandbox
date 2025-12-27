@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -7,6 +7,7 @@ class ExecutionStep(BaseModel):
     input: Any
     output: Any
     duration_ms: int
+    tool_usage: Optional[Dict[str, int]] = None  # Tool breakdown for this step
 
 class Trace(BaseModel):
     run_id: str

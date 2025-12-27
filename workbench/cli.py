@@ -49,6 +49,18 @@ def run_single(
         for component, data in score_data["breakdown"].items():
             typer.echo(f"  └ {component.replace('_', ' ').title()}: {data['earned']}/{data['possible']}")
     
+    # Show tool usage
+    if result.tool_details:
+        total_tools = sum(result.tool_details.values())
+        if total_tools > 0:
+            typer.echo(f"Tools used ({total_tools} total):")
+            for tool, count in result.tool_details.items():
+                if count > 0:
+                    percentage = (count / total_tools) * 100
+                    typer.echo(f"  └ {tool}: {count} ({percentage:.0f}%)")
+    elif result.tool_calls > 0:
+        typer.echo(f"Tool calls: {result.tool_calls}")
+    
     if result.error_category:
         typer.secho(f"Error: {result.error_category.value}", fg=typer.colors.RED)
     

@@ -49,16 +49,34 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     # Try to draft scenario
     try:
         start_time = time.time()
-        draft_data = agent.draft(task.prompt, task.mode, task.generate_ledger, prompt_dir, model_name)
+        max_tool_calls = task.limits.max_tool_calls
+        draft_result = agent.draft(task.prompt, task.mode, task.generate_ledger, prompt_dir, model_name, max_tool_calls)
         duration_ms = int((time.time()-start_time)*1000)
+
+        # Handle tuple return for tool agents vs string return for others
+        if isinstance(draft_result, tuple):
+            if len(draft_result) == 3:
+                # ClaudeToolsAgent with tool tracking
+                draft_data, tool_calls_used, tool_details = draft_result
+                result.tool_calls += tool_calls_used
+                result.tool_details = result.tool_details or {}
+                for tool, count in tool_details.items():
+                    result.tool_details[tool] = result.tool_details.get(tool, 0) + count
+            else:
+                # Old tuple format
+                draft_data, tool_calls_used = draft_result
+                result.tool_calls += tool_calls_used
+        else:
+            # Non-tool models: don't increment tool_calls
+            draft_data = draft_result
 
         trace.execution_steps.append(ExecutionStep(
             step="draft",
             input=task.prompt,
             output=draft_data,
-            duration_ms=duration_ms
+            duration_ms=duration_ms,
+            tool_usage=tool_details if 'tool_details' in locals() else None
         ))
-        result.tool_calls += 1
         
         # Parse draft JSON
         try:
@@ -121,13 +139,33 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
 
     if eval_result.verdict == "infeasible": #begin repair loop
         start_time = time.time()
-        repair_data = agent.repair(scenario.model_dump_json(), eval_result.model_dump(mode='json'), task.generate_ledger, prompt_dir, model_name)
+        max_tool_calls = task.limits.max_tool_calls
+        repair_result = agent.repair(scenario.model_dump_json(), eval_result.model_dump(mode='json'), task.generate_ledger, prompt_dir, model_name, max_tool_calls)
         duration_ms = int((time.time()-start_time)*1000)
+        
+        # Handle tuple return for tool agents vs string return for others
+        if isinstance(repair_result, tuple):
+            if len(repair_result) == 3:
+                # ClaudeToolsAgent with tool tracking
+                repair_data, repair_tool_calls_used, repair_tool_details = repair_result
+                result.tool_calls += repair_tool_calls_used
+                result.tool_details = result.tool_details or {}
+                for tool, count in repair_tool_details.items():
+                    result.tool_details[tool] = result.tool_details.get(tool, 0) + count
+            else:
+                # Old tuple format
+                repair_data, repair_tool_calls_used = repair_result
+                result.tool_calls += repair_tool_calls_used
+        else:
+            # Non-tool models: don't increment tool_calls
+            repair_data = repair_result
+            
         trace.execution_steps.append(ExecutionStep(
             step="repair",
             input=scenario.model_dump_json(),
             output=repair_data,
-            duration_ms=duration_ms
+            duration_ms=duration_ms,
+            tool_usage=repair_tool_details if 'repair_tool_details' in locals() else None
         ))
         # Parse repair JSON
         try:
@@ -161,7 +199,6 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
             result.error_category = ErrorCategory.SCHEMA_MISMATCH
             return result
 
-        result.tool_calls += 1
         result.repair_attempts += 1
         result.repair_attempted = True
 
@@ -192,10 +229,8 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     # Ledger validation completed during eval steps above
     
 
-    if result.tool_calls == 0:
-        result.error_category = ErrorCategory.NO_TOOL_USE
-
-    elif result.tool_calls > task.limits.max_tool_calls:
+    # Only check tool call limits for tool-enabled models
+    if result.tool_calls > task.limits.max_tool_calls:
         result.error_category = ErrorCategory.EXCEEDED_MAX_TOOL_CALLS
     
     elif result.repair_attempts > task.limits.max_repairs:

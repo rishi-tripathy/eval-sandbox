@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict
 from workbench.types import InvariantType, MonthlyRecord
 from typing import List
 
@@ -33,7 +33,6 @@ class ErrorCategory(Enum):
     WRONG_VERDICT = "WRONG_VERDICT"  # fixture-only
     WRONG_FIRST_VIOLATION_MONTH = "WRONG_FIRST_VIOLATION_MONTH"  # fixture-only
     WRONG_VIOLATION = "WRONG_VIOLATION"  # fixture-only
-    NO_TOOL_USE = "NO_TOOL_USE"  # tool_calls == 0 when task requires at least 1 (always, in v1)
     EARLY_STOP = "EARLY_STOP"  # stopped before running run_eval at least once
     INACCURATE_REPAIR_LABEL = "INACCURATE_REPAIR_LABEL"  # repair label does not match issued repair type
 class TaskResult(BaseModel):
@@ -52,6 +51,7 @@ class TaskResult(BaseModel):
     # Metrics
     tool_calls: int = 0
     repair_attempts: int = 0
+    tool_details: Optional[Dict[str, int]] = None  # {"calculate": 3, "validate_monthly_record": 2}
 
     # Scoring
     verdict_correct: Optional[bool] = None

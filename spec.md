@@ -766,7 +766,7 @@ Until MCP/tool calling is implemented:
 
 ---
 
-# Milestone 4 — MCP Integration & Tool Use Migration
+# Milestone 4 — Tool Use Migration
 
 **Goal:** Evolve from one-shot JSON to orchestrated agent runtime with proper tool use
 
@@ -865,7 +865,7 @@ Until MCP/tool calling is implemented:
 
 ### Definition of done
 
-- Working MCP server with financial evaluation tools
+- Working tool use with financial evaluation tools
 - Agent successfully uses tools for complete evaluation workflow
 - Performance comparison vs current one-shot approach
 - Clear understanding of tool use benefits vs complexity tradeoffs
