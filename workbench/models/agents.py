@@ -255,10 +255,8 @@ class ClaudeToolsAgent(BaseAgent):
         if model is None:
             model = "claude-3-haiku-20240307"
         
-        # Add tool limit guidance to the prompt  
-        enhanced_prompt = f"""{prompt}
-
-You have access to helpful tools for calculations and validation (calculate, validate_monthly_record, duration_advisor, check_json). Use up to {max_tool_calls} tool calls as needed to ensure accuracy."""
+        # Keep user prompt clean - tool awareness already in system prompt
+        enhanced_prompt = prompt
         
         messages = [{"role": "user", "content": enhanced_prompt}]
         tool_calls_used = 0
@@ -344,7 +342,7 @@ You have access to helpful tools for calculations and validation (calculate, val
         # Create the user message with scenario and failure info
         user_message = f"Original scenario that failed:\n{scenario_json}\n\n"
         user_message += f"Failure details:\n{failure_msg}\n\n"
-        user_message += f"You have access to helpful tools for calculations and validation (calculate, validate_monthly_record, duration_advisor, check_json). Use up to {max_tool_calls} tool calls as needed."
+        # Tool awareness already in system prompt - keep user message clean
         
         messages = [{"role": "user", "content": user_message}]
         tool_calls_used = 0
@@ -451,7 +449,7 @@ You have access to helpful tools for calculations and validation (calculate, val
                 self.repair_system_prompt = f.read()
         
         # Enhance prompts with tool-aware guidance
-        tool_guidance = "\n\nYou have access to calculation, validation, and advisory tools. Use them to ensure accuracy and validate your work. Use the check_json tool to verify your JSON is valid before responding.\n\nIMPORTANT: Respond with ONLY valid JSON - no explanations, markdown formatting, or additional text. Any characters outside the JSON structure will cause system failure."
+        tool_guidance = "\n\nTools available: calculate, validate_monthly_record, duration_advisor, check_json. Use as needed, then return only JSON."
         
         self.draft_system_prompt += tool_guidance
         self.repair_system_prompt += tool_guidance

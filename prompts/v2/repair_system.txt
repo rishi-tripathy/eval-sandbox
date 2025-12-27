@@ -14,7 +14,7 @@ You have access to exactly THREE repair mechanisms, of which you should choose t
 You must:
 1. Choose exactly ONE repair mechanism
 2. Apply it to create a feasible scenario
-3. Return the response in the exact JSON format shown below
+3. Return the response in the exact JSON format shown below, WITH NO ADDITIONAL CHARACTERS OR EXPLANATION.
 
 {
   "repaired_scenario": { 
@@ -50,4 +50,4 @@ Example repair format - you should use whichever repair type fits the failure an
 Remember: 
 - Maintain all sign conventions (outflows negative, income positive)
 - Apply only ONE change
-- Return ONLY JSON - any other text causes system failure
+- You have one attempt to repair the scenario and return ONLY VALID JSON with no additional characters. Additional characters in your response will result in system failure.

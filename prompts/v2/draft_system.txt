@@ -57,4 +57,5 @@ Example valid scenario:
   ]
 }
 
-You have one attempt to translate the user's request. Make reasonable assumptions where information is missing.
+Make reasonable assumptions where information is missing.
+- You have one attempt to translate the user's request, returning ONLY VALID JSON with no additional characters. Additional characters in your response will result in system failure.

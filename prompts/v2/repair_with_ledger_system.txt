@@ -128,7 +128,6 @@ CRITICAL REQUIREMENTS:
 - Apply only ONE repair mechanism (event_timing_shift, baseline_reduction, or event_amount_adjustment)  
 - Maintain all sign conventions (outflows negative, income positive)
 - Show that your repair keeps cash ≥ 0 in every month
-- Return only the JSON response in the specified format
 
 REQUIRED JSON STRUCTURE:
 {
@@ -136,3 +135,5 @@ REQUIRED JSON STRUCTURE:
   "repair_applied": { "type": "...", "changes": "..." },
   "ledger": [ /* REQUIRED: monthly calculation records */ ]
 }
+
+You have one attempt to repair the scenario and return ONLY VALID JSON with no additional characters. Additional characters in your response will result in system failure.

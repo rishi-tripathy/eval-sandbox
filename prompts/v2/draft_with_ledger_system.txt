@@ -144,4 +144,5 @@ COMMON SCENARIO PATTERNS:
 - Sabbatical/temporary income loss: Use negative event amount with duration
   Example: {"label": "sabbatical_income_loss", "start_month": "2024-07", "amount": -5500, "duration_months": 3}
 
-You have one attempt to translate the user's request and show your month-by-month calculations. Make reasonable assumptions where information is missing.
+Make reasonable assumptions where information is missing.
+- You have one attempt to translate the user's request and show your month-by-month calculations, returning ONLY VALID JSON with no additional characters. Additional characters in your response will result in system failure.
