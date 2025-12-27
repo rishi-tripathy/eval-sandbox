@@ -1,0 +1,14 @@
+{
+  "id": "student_loan_payment",
+  "title": "Student loan grace period ending",
+  "mode": "fast",
+  "generate_ledger": true,
+  "prompt": "I make $3500 monthly with current expenses of $2900. My student loan grace period ends in July, adding $650/month in payments. I'm also expecting a tax refund of $1800 in April. Current savings: $2200. Timeline: March through September 2024.",
+  "limits": {
+    "max_tool_calls": 5,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "freelance_ramp",
+  "title": "Freelance income growth",
+  "mode": "fast",
+  "generate_ledger": true,
+  "prompt": "My main job pays $3000/month, plus I do freelance work bringing in $600/month. Expenses are $3200 total. Starting in July, I'm expecting freelance income to grow to $1200/month. I have $2500 saved. Timeline: May through November 2024.",
+  "limits": {
+    "max_tool_calls": 5,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible"
+  }
+}
