@@ -448,11 +448,11 @@ class ClaudeToolsAgent(BaseAgent):
             with open(os.path.join(prompt_dir, "repair_system.txt"), "r") as f:
                 self.repair_system_prompt = f.read()
         
-        # Enhance prompts with tool-aware guidance
-        tool_guidance = "\n\nTools available: calculate, validate_monthly_record, duration_advisor, check_json. Use as needed, then return only JSON."
+        # Enhance prompts with tool-aware guidance at the beginning
+        tool_guidance = "Tools available: calculate, validate_monthly_record, duration_advisor, check_json. Use as needed.\n\n"
         
-        self.draft_system_prompt += tool_guidance
-        self.repair_system_prompt += tool_guidance
+        self.draft_system_prompt = tool_guidance + self.draft_system_prompt
+        self.repair_system_prompt = tool_guidance + self.repair_system_prompt
 
 
 def get_agent(model: str) -> BaseAgent:

@@ -107,6 +107,10 @@ def run_suite(
     repair_strategies = {}
     error_categories = {}
     
+    # Tool usage tracking
+    total_tool_calls = 0
+    tool_usage_totals = {"calculate": 0, "validate_monthly_record": 0, "duration_advisor": 0, "check_json": 0}
+    
     session_summary = ""
     session_results = []
     
@@ -203,9 +207,18 @@ def run_suite(
             if result.error_category:
                 error_name = result.error_category.value if hasattr(result.error_category, 'value') else str(result.error_category)
                 error_categories[error_name] = error_categories.get(error_name, 0) + 1
+                
+            # Track tool usage
+            if result.tool_calls:
+                total_tool_calls += result.tool_calls
+            if result.tool_details:
+                for tool, count in result.tool_details.items():
+                    if tool in tool_usage_totals:
+                        tool_usage_totals[tool] += count
             
             repair_strategy_lines = "\n".join([f"            {strategy}: {count}" for strategy, count in repair_strategies.items()])
             error_category_lines = "\n".join([f"            {error}: {count}" for error, count in error_categories.items()])
+            tool_usage_lines = "\n".join([f"            {tool}: {count}" for tool, count in tool_usage_totals.items() if count > 0])
             
             # Calculate ledger accuracy percentages
             draft_accuracy = f"{draft_ledgers_correct}/{tasks_with_draft_ledger}" if tasks_with_draft_ledger > 0 else "N/A"
@@ -240,6 +253,9 @@ def run_suite(
             
             Error categories:
 {error_category_lines or "            (none)"}
+            
+            Tool usage (total calls: {total_tool_calls}):
+{tool_usage_lines or "            (none)"}
             """
             # if verbose:
             #     typer.echo("\nFull result for task {task.name}:")
