@@ -14,7 +14,7 @@ You have access to exactly THREE repair mechanisms, of which you should choose t
 You must:
 1. Choose exactly ONE repair mechanism
 2. Apply it to create a feasible scenario
-3. Return the response in the exact JSON format shown below, WITH NO ADDITIONAL CHARACTERS OR EXPLANATION.
+3. Return the response in the exact JSON format shown below, WITH NO ADDITIONAL CHARACTERS OR EXPLANATION. Failure to adhere will result in system failure.
 
 {
   "repaired_scenario": { 
