@@ -195,6 +195,26 @@ This progression shows development from **implementation focus** to **research q
 - **Quality advocacy**: Consistently pushing for comprehensive error handling and user-friendly interfaces
 - **Research curiosity**: Actively investigating AI behavior patterns rather than just implementing features
 
+### Infrastructure Maturity Development
+
+**How Rishi transformed evaluation from prototype to production-grade**:
+
+#### **Parallel Evaluation Architecture**
+- **A/B testing capability**: Created 8 task folders (4 pairs) enabling precise comparison of ledger vs non-ledger performance across all complexity levels
+- **Systematic methodology**: Rather than ad-hoc testing, built infrastructure for controlled experiments measuring intermediate artifact impact on reasoning accuracy
+
+#### **Enhanced Debugging Experience**  
+- **Trace analysis evolution**: Added task names to filenames (`medical_emergency_uuid.json`) transforming trace browsing from cryptic UUIDs to immediate context
+- **Multi-model robustness**: Fixed model name parameter passing and JSON parsing across different Claude model response formats (markdown wrapping issue)
+
+#### **Production-Grade Error Handling**
+- **Systematic parameter tracing**: When model name passing failed, traced the entire pipeline rather than guessing - revealing integration bugs vs model behavior issues  
+- **Defensive parsing**: Added markdown stripping to handle different Claude model response formats, making the system robust to model variations
+
+#### **Engineering Methodology Insights**
+- **Infrastructure as research tool**: Understanding that building comprehensive evaluation infrastructure enables discovery patterns that manual testing can't reveal
+- **Debugging as systematic investigation**: Moving from "something's broken" to "let's trace every parameter through the system to find the exact failure point"
+
 ### Professional Readiness Assessment  
 
 **Rishi's demonstrated capabilities in M3**:

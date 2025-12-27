@@ -766,11 +766,38 @@ Until MCP/tool calling is implemented:
 
 ---
 
-# Milestone 4 — Regression Testing Infrastructure
+# Milestone 4 — MCP Integration & Tool Use Migration
+
+**Goal:** Evolve from one-shot JSON to orchestrated agent runtime with proper tool use
+
+### Deliverables
+
+- **Calculator tool integration**: Claude can request arithmetic verification for mathematical calculations
+- **Schema validation tool**: Real-time JSON schema checking during generation
+- **Constraint checker**: Live feasibility validation with specific violation details
+- **Multi-turn workflow**: Replace one-shot generation with step-by-step reasoning and verification
+- **Tool calling architecture**: Proper MCP integration following Anthropic patterns
+- **Performance analysis**: Systematic comparison of tool-augmented vs one-shot approach
+- **Mathematical precision improvement**: Target dramatic improvement in 0/15 ledger accuracy scores
+
+### Success Criteria
+
+- Mathematical precision scores improve from ~0% to >80% on complex tasks
+- Tool calling workflow maintains or improves overall task completion rates
+- Clear evidence of reasoning quality improvement vs response time tradeoffs
+- Robust tool call error handling and fallback strategies
+- Performance comparison vs current one-shot approach
+- Clear understanding of tool use benefits vs complexity tradeoffs
+
+---
+
+# Optional Extensions
+
+## Regression Testing Infrastructure
 
 **Goal:** Enable systematic comparison of models, prompts, and architectural changes
 
-### Deliverables
+### Potential Deliverables
 
 **Session comparison tooling**
 
@@ -802,11 +829,11 @@ Until MCP/tool calling is implemented:
 
 ---
 
-# Milestone 5 — MCP Integration & Tool Use Migration
+## Advanced Tool Integration
 
-**Goal:** Evolve from one-shot JSON to orchestrated agent runtime with proper tool use
+**Goal:** Extended tool capabilities and specialized reasoning chains
 
-### Deliverables
+### Potential Deliverables
 
 **MCP server implementation**
 
@@ -845,7 +872,11 @@ Until MCP/tool calling is implemented:
 
 ---
 
-# Milestone 6 (Optional) — Metamorphic Testing & Extensions
+## Metamorphic Testing Framework
+
+**Goal:** Test scenario equivalence and linguistic robustness
+
+### Potential Deliverables
 
 - `tasks/v1/` expanded to ~10 tasks (same categories you listed)
 - ~5 tasks include `expected`
