@@ -235,6 +235,18 @@ class ClaudeToolsAgent(BaseAgent):
                 },
                 "required": ["event_description"]
                 }   
+            },
+            {
+            "name": "finalize_json",
+            "description": "Extract, clean, and validate your final JSON response. Use this as your last step before responding to ensure clean, valid JSON output. Handles extraction from explanatory text and validates against expected schema.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "response_text": {"type": "string", "description": "Your complete response text containing JSON"},
+                    "expected_schema": {"type": "string", "enum": ["scenario", "repair"], "description": "Type of JSON expected: 'scenario' for draft responses, 'repair' for repair responses"}
+                },
+                "required": ["response_text", "expected_schema"]
+                }   
             }
         ]    
     
@@ -247,11 +259,11 @@ class ClaudeToolsAgent(BaseAgent):
         # Add tool limit guidance to the prompt  
         enhanced_prompt = f"""{prompt}
 
-You have access to helpful tools for calculations and validation. Use up to {max_tool_calls} tool calls to verify your work before providing the final JSON response. Use tools like 'calculate', 'validate_monthly_record', and 'duration_advisor' as needed."""
+You have access to helpful tools for calculations and validation (calculate, validate_monthly_record, duration_advisor, finalize_json). Use up to {max_tool_calls} tool calls as needed to ensure accuracy."""
         
         messages = [{"role": "user", "content": enhanced_prompt}]
         tool_calls_used = 0
-        tool_usage = {"calculate": 0, "validate_monthly_record": 0, "duration_advisor": 0}
+        tool_usage = {"calculate": 0, "validate_monthly_record": 0, "duration_advisor": 0, "finalize_json": 0}
         
         try:
             while tool_calls_used < max_tool_calls:
@@ -333,11 +345,11 @@ You have access to helpful tools for calculations and validation. Use up to {max
         # Create the user message with scenario and failure info
         user_message = f"Original scenario that failed:\n{scenario_json}\n\n"
         user_message += f"Failure details:\n{failure_msg}\n\n"
-        user_message += f"You have access to helpful tools for calculations and validation. You can use up to {max_tool_calls} tool calls. Use them strategically to create a feasible repair."
+        user_message += f"You have access to helpful tools for calculations and validation (calculate, validate_monthly_record, duration_advisor, finalize_json). Use up to {max_tool_calls} tool calls as needed."
         
         messages = [{"role": "user", "content": user_message}]
         tool_calls_used = 0
-        tool_usage = {"calculate": 0, "validate_monthly_record": 0, "duration_advisor": 0}
+        tool_usage = {"calculate": 0, "validate_monthly_record": 0, "duration_advisor": 0, "finalize_json": 0}
         
         try:
             while tool_calls_used < max_tool_calls:
@@ -418,6 +430,10 @@ You have access to helpful tools for calculations and validation. Use up to {max
         elif tool_name == "duration_advisor":
             from workbench.models.tools.duration_advisor import duration_advisor
             return duration_advisor(args["event_description"])
+        elif tool_name == "finalize_json":
+            from workbench.models.tools.finalize_json import finalize_json
+            expected_schema = args.get("expected_schema", "scenario")
+            return finalize_json(args["response_text"], expected_schema)
         else:
             raise ValueError(f"Unknown tool: {tool_name}")
 
