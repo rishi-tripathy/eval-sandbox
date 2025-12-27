@@ -13,12 +13,31 @@ import uuid
 import os
 
 
+def strip_markdown_json(text: str) -> str:
+    """Strip markdown code block formatting from JSON text."""
+    # Remove leading ```json or ``` 
+    text = text.strip()
+    if text.startswith('```json'):
+        text = text[7:]  # Remove ```json
+    elif text.startswith('```'):
+        text = text[3:]   # Remove ```
+    
+    # Remove trailing ```
+    if text.endswith('```'):
+        text = text[:-3]
+    
+    return text.strip()
+
+
 def run_task(task_path: str, model: str = "claude", session_id: str = None, prompt_dir: str = "prompts/v2", model_name: str = None) -> TaskResult:
     task = Task.model_validate_json(open(task_path).read())
     if session_id is None:
           session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
+    
+    print(f"DEBUG runner.py: model='{model}', model_name='{model_name}'")
     trace = init_trace(task.id, model, task.prompt, session_id)    
     agent = get_agent(model)
+    print(f"DEBUG runner.py: agent type = {type(agent).__name__}")
 
     draft_ledger_json = None
     repair_ledger_json = None
@@ -32,8 +51,10 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     # Try to draft scenario
     try:
         start_time = time.time()
+        print(f"DEBUG runner.py: calling agent.draft with model_name='{model_name}'")
         draft_data = agent.draft(task.prompt, task.mode, task.generate_ledger, prompt_dir, model_name)
         duration_ms = int((time.time()-start_time)*1000)
+        print(f"DEBUG runner.py: draft_data length = {len(draft_data) if draft_data else 'None'}")
 
         trace.execution_steps.append(ExecutionStep(
             step="draft",
@@ -45,7 +66,10 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
         
         # Parse draft JSON
         try:
-            draft_parsed = json.loads(draft_data)
+            # Strip markdown formatting if present
+            clean_json = strip_markdown_json(draft_data)
+            print(f"DEBUG runner.py: clean_json preview = {clean_json[:100]}...")
+            draft_parsed = json.loads(clean_json)
             if task.generate_ledger:
                 draft_scenario_json = draft_parsed["scenario"]
                 draft_ledger_json = draft_parsed.get("ledger")
@@ -112,7 +136,9 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
         ))
         # Parse repair JSON
         try:
-            repair_parsed = json.loads(repair_data)
+            # Strip markdown formatting if present
+            clean_repair_json = strip_markdown_json(repair_data)
+            repair_parsed = json.loads(clean_repair_json)
             repair_scenario_json = repair_parsed["repaired_scenario"]
             result.repair_strategy = repair_parsed["repair_applied"]["type"]
             result.repair_json = json.dumps(repair_scenario_json)
