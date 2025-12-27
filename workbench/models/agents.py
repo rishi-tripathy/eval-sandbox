@@ -134,7 +134,7 @@ class ClaudeAgent(BaseAgent):
         self.client = Anthropic(api_key=api_key)
         
     
-    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = "claude-3-haiku-20240307"):
+    def draft(self, prompt: str, mode: str, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = "claude-3-haiku-20240307", max_tool_calls: int = 10):
         self.load_prompts(generate_ledger, prompt_dir)
         # Use default model if None is passed
         if model is None:
@@ -153,7 +153,7 @@ class ClaudeAgent(BaseAgent):
             # Let the runner handle errors
             raise e
     
-    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = "claude-3-haiku-20240307") -> str:
+    def repair(self, scenario_json: str, eval_result: dict, generate_ledger: bool = False, prompt_dir: str = "prompts/v2", model: str = "claude-3-haiku-20240307", max_tool_calls: int = 10) -> str:
         self.load_prompts(generate_ledger, prompt_dir)
         # Use default model if None is passed
         if model is None:
@@ -237,15 +237,14 @@ class ClaudeToolsAgent(BaseAgent):
                 }   
             },
             {
-            "name": "finalize_json",
-            "description": "Extract, clean, and validate your final JSON response. Use this as your last step before responding to ensure clean, valid JSON output. Handles extraction from explanatory text and validates against expected schema.",
+            "name": "check_json",
+            "description": "Check if a string is valid JSON. Returns true if valid, false if invalid. Use this to verify your JSON before submitting.",
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "response_text": {"type": "string", "description": "Your complete response text containing JSON"},
-                    "expected_schema": {"type": "string", "enum": ["scenario", "repair"], "description": "Type of JSON expected: 'scenario' for draft responses, 'repair' for repair responses"}
+                    "response_text": {"type": "string", "description": "The JSON text to validate"}
                 },
-                "required": ["response_text", "expected_schema"]
+                "required": ["response_text"]
                 }   
             }
         ]    
@@ -259,11 +258,11 @@ class ClaudeToolsAgent(BaseAgent):
         # Add tool limit guidance to the prompt  
         enhanced_prompt = f"""{prompt}
 
-You have access to helpful tools for calculations and validation (calculate, validate_monthly_record, duration_advisor, finalize_json). Use up to {max_tool_calls} tool calls as needed to ensure accuracy."""
+You have access to helpful tools for calculations and validation (calculate, validate_monthly_record, duration_advisor, check_json). Use up to {max_tool_calls} tool calls as needed to ensure accuracy."""
         
         messages = [{"role": "user", "content": enhanced_prompt}]
         tool_calls_used = 0
-        tool_usage = {"calculate": 0, "validate_monthly_record": 0, "duration_advisor": 0, "finalize_json": 0}
+        tool_usage = {"calculate": 0, "validate_monthly_record": 0, "duration_advisor": 0, "check_json": 0}
         
         try:
             while tool_calls_used < max_tool_calls:
@@ -345,11 +344,11 @@ You have access to helpful tools for calculations and validation (calculate, val
         # Create the user message with scenario and failure info
         user_message = f"Original scenario that failed:\n{scenario_json}\n\n"
         user_message += f"Failure details:\n{failure_msg}\n\n"
-        user_message += f"You have access to helpful tools for calculations and validation (calculate, validate_monthly_record, duration_advisor, finalize_json). Use up to {max_tool_calls} tool calls as needed."
+        user_message += f"You have access to helpful tools for calculations and validation (calculate, validate_monthly_record, duration_advisor, check_json). Use up to {max_tool_calls} tool calls as needed."
         
         messages = [{"role": "user", "content": user_message}]
         tool_calls_used = 0
-        tool_usage = {"calculate": 0, "validate_monthly_record": 0, "duration_advisor": 0, "finalize_json": 0}
+        tool_usage = {"calculate": 0, "validate_monthly_record": 0, "duration_advisor": 0, "check_json": 0}
         
         try:
             while tool_calls_used < max_tool_calls:
@@ -430,10 +429,9 @@ You have access to helpful tools for calculations and validation (calculate, val
         elif tool_name == "duration_advisor":
             from workbench.models.tools.duration_advisor import duration_advisor
             return duration_advisor(args["event_description"])
-        elif tool_name == "finalize_json":
-            from workbench.models.tools.finalize_json import finalize_json
-            expected_schema = args.get("expected_schema", "scenario")
-            return finalize_json(args["response_text"], expected_schema)
+        elif tool_name == "check_json":
+            from workbench.models.tools.check_json import check_json
+            return check_json(args["response_text"])
         else:
             raise ValueError(f"Unknown tool: {tool_name}")
 
@@ -453,7 +451,7 @@ You have access to helpful tools for calculations and validation (calculate, val
                 self.repair_system_prompt = f.read()
         
         # Enhance prompts with tool-aware guidance
-        tool_guidance = "\n\nYou have access to calculation, validation, and advisory tools. Use them to ensure accuracy and validate your work. When you're confident in your response, use the finalize_json tool to clean up your JSON output.\n\nIMPORTANT: Respond with ONLY valid JSON - no explanations, markdown formatting, or additional text. Any characters outside the JSON structure will cause system failure."
+        tool_guidance = "\n\nYou have access to calculation, validation, and advisory tools. Use them to ensure accuracy and validate your work. Use the check_json tool to verify your JSON is valid before responding.\n\nIMPORTANT: Respond with ONLY valid JSON - no explanations, markdown formatting, or additional text. Any characters outside the JSON structure will cause system failure."
         
         self.draft_system_prompt += tool_guidance
         self.repair_system_prompt += tool_guidance
