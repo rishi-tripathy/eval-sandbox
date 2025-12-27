@@ -34,10 +34,8 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     if session_id is None:
           session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
     
-    print(f"DEBUG runner.py: model='{model}', model_name='{model_name}'")
     trace = init_trace(task.id, model, task.prompt, session_id)    
     agent = get_agent(model)
-    print(f"DEBUG runner.py: agent type = {type(agent).__name__}")
 
     draft_ledger_json = None
     repair_ledger_json = None
@@ -51,10 +49,8 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     # Try to draft scenario
     try:
         start_time = time.time()
-        print(f"DEBUG runner.py: calling agent.draft with model_name='{model_name}'")
         draft_data = agent.draft(task.prompt, task.mode, task.generate_ledger, prompt_dir, model_name)
         duration_ms = int((time.time()-start_time)*1000)
-        print(f"DEBUG runner.py: draft_data length = {len(draft_data) if draft_data else 'None'}")
 
         trace.execution_steps.append(ExecutionStep(
             step="draft",
@@ -68,7 +64,6 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
         try:
             # Strip markdown formatting if present
             clean_json = strip_markdown_json(draft_data)
-            print(f"DEBUG runner.py: clean_json preview = {clean_json[:100]}...")
             draft_parsed = json.loads(clean_json)
             if task.generate_ledger:
                 draft_scenario_json = draft_parsed["scenario"]

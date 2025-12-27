@@ -140,9 +140,7 @@ class ClaudeAgent(BaseAgent):
         if model is None:
             model = "claude-3-haiku-20240307"
         
-        print(f"DEBUG ClaudeAgent.draft: received model='{model}', generate_ledger={generate_ledger}")
         try:
-            print(f"DEBUG ClaudeAgent.draft: calling anthropic API with model='{model}'")
             response = self.client.messages.create(
                 model=model,
                 max_tokens=2500,
@@ -150,12 +148,8 @@ class ClaudeAgent(BaseAgent):
                 messages=[{"role": "user", "content": prompt}]
             )
             # Extract text from Claude's response
-            result = response.content[0].text
-            print(f"DEBUG ClaudeAgent.draft: API response length = {len(result)}")
-            print(f"DEBUG ClaudeAgent.draft: API response preview = {result[:100]}...")
-            return result
+            return response.content[0].text
         except Exception as e:
-            print(f"DEBUG ClaudeAgent.draft: API call failed with error: {e}")
             # Let the runner handle errors
             raise e
     
@@ -199,19 +193,13 @@ class ClaudeAgent(BaseAgent):
 
 
 def get_agent(model: str) -> BaseAgent:
-    print(f"DEBUG get_agent: called with model='{model}'")
     if model == "stub":
-        print("DEBUG get_agent: returning StubAgent")
         return StubAgent()
     elif model == "bad_json":
-        print("DEBUG get_agent: returning BadJSONAgent")
         return BadJSONAgent()
     elif model == "bad_schema":
-        print("DEBUG get_agent: returning BadSchemaAgent")
         return BadSchemaAgent()
     elif model == "claude":
-        print("DEBUG get_agent: returning ClaudeAgent")
         return ClaudeAgent()
     else:
-        print(f"DEBUG get_agent: unknown model '{model}', raising ValueError")
         raise ValueError(f"Unknown model: {model}")
