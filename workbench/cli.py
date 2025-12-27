@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 from workbench.runner import run_task
 from workbench.task_types import Task, TaskResult, Limits
+from workbench.comparison import ComparisonConfig, run_comparison, save_comparison_results
 import json
 import uuid
 from datetime import datetime
@@ -362,6 +363,78 @@ def run_prompt(
         if result.scenario_json:
             scenario_obj = json.loads(result.scenario_json) 
             typer.echo(json.dumps(scenario_obj, indent=2))
+
+
+@app.command()
+def run_comparison(
+    models: str = typer.Option(..., "--models", help="Comma-separated list of models (e.g., claude,claude-tools)"),
+    task_sets: str = typer.Option(..., "--task-sets", help="Comma-separated list of task set directories"),
+    runs: int = typer.Option(5, "--runs", help="Number of runs per condition"),
+    session_id: Optional[str] = typer.Option(None, "--session-id", help="Custom session ID (auto-generated if not provided)"),
+    prompt_dir: str = typer.Option("prompts/v2", "--prompts", help="Directory containing prompt files"),
+    model_name: Optional[str] = typer.Option(None, "--model-name", help="Specific model name to pass to API"),
+    output_dir: str = typer.Option("reports", "--output", help="Output directory for results")
+):
+    """Run systematic comparison across models and task sets."""
+    
+    # Validate inputs
+    try:
+        # Check that task sets exist
+        task_set_list = [ts.strip() for ts in task_sets.split(",")]
+        for task_set in task_set_list:
+            if not Path(task_set).exists():
+                typer.secho(f"❌ Task set directory not found: {task_set}", fg=typer.colors.RED)
+                raise typer.Exit(1)
+                
+            # Check for task files
+            task_files = list(Path(task_set).glob("*.json"))
+            if not task_files:
+                typer.secho(f"❌ No task files found in: {task_set}", fg=typer.colors.RED)
+                raise typer.Exit(1)
+        
+        # Create configuration
+        config = ComparisonConfig.from_csv_params(
+            models_csv=models,
+            task_sets_csv=task_sets,
+            runs_per_condition=runs,
+            session_id=session_id,
+            prompt_dir=prompt_dir,
+            model_name=model_name
+        )
+        
+        # Display comparison plan
+        typer.echo(f"🔬 Comparison Configuration:")
+        typer.echo(f"   Models: {', '.join(config.models)}")
+        typer.echo(f"   Task Sets: {', '.join([Path(ts).name for ts in config.task_sets])}")
+        typer.echo(f"   Runs per condition: {config.runs_per_condition}")
+        typer.echo(f"   Total executions: {config.total_executions()}")
+        typer.echo(f"   Session ID: {config.session_id}")
+        typer.echo()
+        
+        # Confirm execution
+        if config.total_executions() > 50:
+            proceed = typer.confirm(f"This will run {config.total_executions()} individual tasks. Continue?")
+            if not proceed:
+                typer.echo("Comparison cancelled.")
+                raise typer.Exit(0)
+        
+        # Run comparison
+        comparison_result = run_comparison(config)
+        
+        # Save results
+        output_path = save_comparison_results(comparison_result, output_dir)
+        
+        # Display summary
+        typer.echo()
+        typer.secho(f"✓ Comparison complete!", fg=typer.colors.GREEN)
+        typer.echo(f"📊 Results saved to: {output_path}")
+        typer.echo(f"📈 Report: {output_path}/comparison_report.md")
+        typer.echo(f"📋 Raw data: {output_path}/raw_results.ndjson")
+        
+    except Exception as e:
+        typer.secho(f"❌ Comparison failed: {e}", fg=typer.colors.RED)
+        raise typer.Exit(1)
+
 
 if __name__ == "__main__":
     app()
