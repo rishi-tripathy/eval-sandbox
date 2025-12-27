@@ -6,10 +6,13 @@ Supports A/B testing across models, task sets, and other parameters.
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple, Iterator, Optional
+from typing import List, Tuple, Iterator, Optional, Dict
 import uuid
 import typer
-from workbench.task_types import TaskResult
+import json
+import os
+from collections import defaultdict
+from workbench.task_types import TaskResult, ErrorCategory
 from workbench.runner import run_task
 
 
@@ -207,7 +210,7 @@ def run_comparison(config: ComparisonConfig) -> ComparisonResult:
     return comparison_result
 
 
-def group_results_by_condition(comparison_result: ComparisonResult) -> dict:
+def group_results_by_condition(comparison_result: ComparisonResult) -> Dict[Tuple[str, str], List[TaskResult]]:
     """Group results by model and task set for analysis."""
     grouped = {}
     
@@ -218,3 +221,210 @@ def group_results_by_condition(comparison_result: ComparisonResult) -> dict:
         grouped[key].append(result)
     
     return grouped
+
+
+@dataclass
+class ConditionStats:
+    """Statistics for a single condition (model + task set combination)."""
+    model: str
+    task_set: str
+    total_tasks: int
+    successful_tasks: int
+    success_rate: float
+    average_score: float
+    score_std: float
+    error_categories: Dict[str, int]
+    tool_usage_total: int
+    tool_usage_breakdown: Dict[str, int]
+
+
+def calculate_condition_stats(results: List[TaskResult]) -> ConditionStats:
+    """Calculate aggregate statistics for a condition."""
+    if not results:
+        return ConditionStats(
+            model="unknown", task_set="unknown", total_tasks=0,
+            successful_tasks=0, success_rate=0.0, average_score=0.0, score_std=0.0,
+            error_categories={}, tool_usage_total=0, tool_usage_breakdown={}
+        )
+    
+    # Basic counts
+    total_tasks = len(results)
+    successful_tasks = sum(1 for r in results if r.error_category is None)
+    success_rate = (successful_tasks / total_tasks) * 100 if total_tasks > 0 else 0.0
+    
+    # Score statistics
+    scores = [r.score_earned for r in results if r.score_earned is not None]
+    average_score = sum(scores) / len(scores) if scores else 0.0
+    score_variance = sum((s - average_score) ** 2 for s in scores) / len(scores) if len(scores) > 1 else 0.0
+    score_std = score_variance ** 0.5
+    
+    # Error category breakdown
+    error_categories = defaultdict(int)
+    for result in results:
+        if result.error_category:
+            error_categories[result.error_category.value] += 1
+    
+    # Tool usage statistics
+    tool_usage_total = sum(r.tool_calls for r in results if r.tool_calls)
+    tool_usage_breakdown = defaultdict(int)
+    for result in results:
+        if result.tool_details:
+            for tool, count in result.tool_details.items():
+                tool_usage_breakdown[tool] += count
+    
+    return ConditionStats(
+        model=results[0].condition_model,
+        task_set=results[0].condition_task_set,
+        total_tasks=total_tasks,
+        successful_tasks=successful_tasks,
+        success_rate=success_rate,
+        average_score=average_score,
+        score_std=score_std,
+        error_categories=dict(error_categories),
+        tool_usage_total=tool_usage_total,
+        tool_usage_breakdown=dict(tool_usage_breakdown)
+    )
+
+
+def generate_comparison_report(comparison_result: ComparisonResult) -> str:
+    """Generate a markdown comparison report."""
+    config = comparison_result.config
+    grouped_results = group_results_by_condition(comparison_result)
+    
+    # Calculate stats for each condition
+    condition_stats = {}
+    for (model, task_set), results in grouped_results.items():
+        condition_stats[(model, task_set)] = calculate_condition_stats(results)
+    
+    # Generate report
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
+    
+    report = f"""# Comparison Report: {timestamp}
+
+## Configuration
+- Models: {', '.join(config.models)}
+- Task Sets: {', '.join([Path(ts).name for ts in config.task_sets])}
+- Runs per condition: {config.runs_per_condition}
+- Total executions: {len(comparison_result.results)}
+
+## Results Summary
+
+| Model | Task Set | Avg Score | Success Rate | Total Tasks | Top Errors |
+|-------|----------|-----------|--------------|-------------|------------|"""
+
+    # Add table rows
+    for (model, task_set), stats in condition_stats.items():
+        task_set_name = Path(task_set).name
+        score_display = f"{stats.average_score:.1f} ± {stats.score_std:.1f}"
+        success_display = f"{stats.success_rate:.1f}%"
+        
+        # Top 2 errors
+        top_errors = sorted(stats.error_categories.items(), key=lambda x: x[1], reverse=True)[:2]
+        error_display = ", ".join([f"{error} ({count})" for error, count in top_errors]) if top_errors else "None"
+        
+        report += f"\n| {model} | {task_set_name} | {score_display} | {success_display} | {stats.total_tasks} | {error_display} |"
+    
+    # Tool usage section
+    if any(stats.tool_usage_total > 0 for stats in condition_stats.values()):
+        report += "\n\n## Tool Usage Analysis\n\n"
+        report += "| Model | Task Set | Total Calls | Tool Breakdown |\n"
+        report += "|-------|----------|-------------|----------------|\n"
+        
+        for (model, task_set), stats in condition_stats.items():
+            task_set_name = Path(task_set).name
+            if stats.tool_usage_total > 0:
+                tool_breakdown = ", ".join([f"{tool}: {count}" for tool, count in stats.tool_usage_breakdown.items()])
+                report += f"| {model} | {task_set_name} | {stats.tool_usage_total} | {tool_breakdown} |\n"
+            else:
+                report += f"| {model} | {task_set_name} | 0 | None |\n"
+    
+    # Error analysis section
+    report += "\n\n## Error Analysis\n\n"
+    all_errors = defaultdict(int)
+    for stats in condition_stats.values():
+        for error, count in stats.error_categories.items():
+            all_errors[error] += count
+    
+    if all_errors:
+        for error, total_count in sorted(all_errors.items(), key=lambda x: x[1], reverse=True):
+            report += f"- **{error}**: {total_count} total occurrences\n"
+            # Show breakdown by condition
+            for (model, task_set), stats in condition_stats.items():
+                if error in stats.error_categories:
+                    count = stats.error_categories[error]
+                    report += f"  - {model} + {Path(task_set).name}: {count}\n"
+    else:
+        report += "No errors occurred across all conditions.\n"
+    
+    # Key findings
+    report += "\n## Key Findings\n\n"
+    
+    # Compare models if multiple
+    if len(config.models) > 1:
+        model_scores = {}
+        model_success = {}
+        for (model, task_set), stats in condition_stats.items():
+            if model not in model_scores:
+                model_scores[model] = []
+                model_success[model] = []
+            model_scores[model].append(stats.average_score)
+            model_success[model].append(stats.success_rate)
+        
+        for model in config.models:
+            avg_score = sum(model_scores[model]) / len(model_scores[model])
+            avg_success = sum(model_success[model]) / len(model_success[model])
+            report += f"- **{model}**: {avg_score:.1f} avg score, {avg_success:.1f}% success rate\n"
+    
+    # Compare task sets if multiple
+    if len(config.task_sets) > 1:
+        report += "\n"
+        task_set_scores = {}
+        for (model, task_set), stats in condition_stats.items():
+            task_name = Path(task_set).name
+            if task_name not in task_set_scores:
+                task_set_scores[task_name] = []
+            task_set_scores[task_name].append(stats.average_score)
+        
+        for task_name, scores in task_set_scores.items():
+            avg_score = sum(scores) / len(scores)
+            report += f"- **{task_name}**: {avg_score:.1f} average difficulty\n"
+    
+    return report
+
+
+def save_comparison_results(comparison_result: ComparisonResult, output_dir: str = "reports") -> str:
+    """Save comparison results to structured output directory."""
+    
+    # Create output directory structure
+    output_path = Path(output_dir) / comparison_result.config.session_id
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Save configuration
+    config_data = {
+        "models": comparison_result.config.models,
+        "task_sets": comparison_result.config.task_sets,
+        "runs_per_condition": comparison_result.config.runs_per_condition,
+        "session_id": comparison_result.config.session_id,
+        "prompt_dir": comparison_result.config.prompt_dir,
+        "total_executions": len(comparison_result.results),
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    with open(output_path / "config.json", "w") as f:
+        json.dump(config_data, f, indent=2)
+    
+    # Save raw results as NDJSON
+    with open(output_path / "raw_results.ndjson", "w") as f:
+        for result in comparison_result.results:
+            f.write(result.model_dump_json() + "\n")
+    
+    # Save comparison report
+    report = generate_comparison_report(comparison_result)
+    with open(output_path / "comparison_report.md", "w") as f:
+        f.write(report)
+    
+    # Create traces directory (individual trace files are already saved by run_task)
+    traces_dir = output_path / "traces"
+    traces_dir.mkdir(exist_ok=True)
+    
+    return str(output_path)
