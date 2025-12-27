@@ -1,0 +1,13 @@
+{
+  "id": "car_lease_promotion",
+  "title": "Car Lease + Promotion - Mixed Timing",
+  "mode": "fast",
+  "prompt": "My take-home is $3800 per month, monthly expenses around $3100. Good news is I got a promotion starting in May that bumps me up to $4400 monthly. But I also signed a car lease that's $450/month for 6 months beginning in April. Oh, and there's a $1200 down payment I need to make when the lease starts. Starting February with $2500 cash, planning through August.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible"
+  }
+}

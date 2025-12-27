@@ -1,0 +1,16 @@
+{
+  "id": "test21",
+  "title": "Force creative thinking - multiple overlapping events",
+  "mode": "fast",
+  "prompt": "Create a financial scenario starting in January 2024, running for 6 months. Starting cash: $2000. Monthly takehome: $4000, baseline expenses: $100 (minimal). Add these events: vacation expense of $5500 in February, wedding gift of $4800 in March, and home repair of $4200 in April.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "infeasible",
+    "first_violation_month": "2024-02",
+    "violated_invariant": "LIQUIDITY_FLOOR"
+  },
+  "generate_ledger": true
+}

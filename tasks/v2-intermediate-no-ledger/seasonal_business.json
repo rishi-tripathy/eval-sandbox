@@ -1,0 +1,13 @@
+{
+  "id": "seasonal_business",
+  "title": "Seasonal income variation",
+  "mode": "fast",
+  "prompt": "I run a lawn care business. In winter I make $2400/month, spring/fall I make $4200/month, and summer I make $6800/month. My expenses are steady at $3500/month. I need to buy equipment in March costing $3800. Starting with $4200 saved in February 2024, planning through August.",
+  "limits": {
+    "max_tool_calls": 5,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible"
+  }
+}

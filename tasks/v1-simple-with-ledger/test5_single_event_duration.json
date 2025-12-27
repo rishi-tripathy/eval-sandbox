@@ -1,0 +1,16 @@
+{
+  "id": "test5",
+  "title": "Temporary expense",
+  "mode": "fast",
+  "prompt": "Create a financial scenario starting in January 2024, running for 6 months. Starting cash: $5,000. Monthly takehome: $3,000, baseline expenses: $2,000. Add moving costs of $1,500 starting in February for 2 months only.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible",
+    "first_violation_month": null,
+    "violated_invariant": null
+  },
+  "generate_ledger": true
+}

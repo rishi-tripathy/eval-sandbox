@@ -1,0 +1,15 @@
+{
+  "id": "vacation_fund",
+  "title": "Building vacation fund with bonus",
+  "mode": "fast",
+  "prompt": "I make $3800 monthly with $2900 in expenses. I'm getting a $2500 bonus in March and want to save it for a vacation in July that'll cost $4500. I have $400 saved currently. Timeline: February through August 2024.",
+  "limits": {
+    "max_tool_calls": 5,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "infeasible",
+    "violated_invariant": "LIQUIDITY_FLOOR",
+    "first_violation_month": "2024-07"
+  }
+}

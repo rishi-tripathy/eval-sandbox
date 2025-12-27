@@ -34,7 +34,7 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     if session_id is None:
           session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
     
-    trace = init_trace(task.id, model, task.prompt, session_id)    
+    trace = init_trace(task.id, task.title, model, task.prompt, session_id)    
     agent = get_agent(model)
 
     draft_ledger_json = None
@@ -223,11 +223,12 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     write_trace(trace)
     return result
 
-def init_trace(task_id: str, model: str, prompt: str, session_id: str) -> Trace:
+def init_trace(task_id: str, task_name: str, model: str, prompt: str, session_id: str) -> Trace:
     return Trace(
         run_id=str(uuid.uuid4()),
         session_id=session_id,
         task_id=task_id,
+        task_name=task_name,
         timestamp=datetime.now(),
         model=model,
         prompt=prompt,
@@ -238,7 +239,7 @@ def init_trace(task_id: str, model: str, prompt: str, session_id: str) -> Trace:
 def write_trace(trace: Trace):
     os.makedirs(f"traces/{trace.session_id}", exist_ok=True)
     try:
-        with open(f"traces/{trace.session_id}/{trace.run_id}.json", "w") as f: 
+        with open(f"traces/{trace.session_id}/{trace.task_id}_{trace.run_id}.json", "w") as f: 
             f.write(trace.model_dump_json(indent=2))
     except Exception as e:
         print(f"🐛 DEBUG: Error serializing trace for task {trace.task_id}: {e}")

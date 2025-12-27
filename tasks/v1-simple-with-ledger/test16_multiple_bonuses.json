@@ -1,0 +1,16 @@
+{
+  "id": "test16",
+  "title": "Multiple bonuses",
+  "mode": "fast",
+  "prompt": "Create a financial scenario starting in January 2024, running for 6 months. Starting cash: $1,000. Monthly takehome: $3,000, baseline expenses: $2,900. Add Q1 bonus of $5,000 in March. Add Q2 bonus of $5,000 in June.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible",
+    "first_violation_month": null,
+    "violated_invariant": null
+  },
+  "generate_ledger": true
+}

@@ -1,0 +1,16 @@
+{
+  "id": "test7",
+  "title": "Zero cash boundary",
+  "mode": "fast",
+  "prompt": "Create a financial scenario starting in January 2024, running for 2 months. Starting cash: $1,000. Monthly takehome: $2,000, monthly expenses: $2,500.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible",
+    "first_violation_month": null,
+    "violated_invariant": null
+  },
+  "generate_ledger": true
+}

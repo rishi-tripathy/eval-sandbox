@@ -1,0 +1,16 @@
+{
+  "id": "test20",
+  "title": "Force amount adjustment - negotiable expense with fixed timing",
+  "mode": "fast",
+  "prompt": "Create a financial scenario starting in January 2024, running for 3 months. Starting cash: $1200. Monthly takehome: $3500, baseline expenses: $3200. Add a security deposit of $2800 due in January (apartment lease starts then).",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "infeasible",
+    "first_violation_month": "2024-01",
+    "violated_invariant": "LIQUIDITY_FLOOR"
+  },
+  "generate_ledger": true
+}

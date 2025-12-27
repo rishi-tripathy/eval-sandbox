@@ -1,0 +1,52 @@
+{
+  "id": "ledger_04_boundary_case",
+  "title": "Boundary case scenario - ledger test",
+  "mode": "fast",
+  "prompt": "Create a financial scenario starting in January 2024, running for 3 months. Starting cash: $200. Monthly takehome: $2000, baseline expenses: $1800 (monthly outflows). Add an emergency expense of $200 in February.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible",
+    "ledger": [
+      {
+        "month": "2024-01",
+        "starting_cash": 200.0,
+        "base_takehome_salary": 2000.0,
+        "base_outflows": -1800.0,
+        "total_inflows": 2000.0,
+        "total_outflows": -1800.0,
+        "events_applied": [],
+        "ending_cash": 400.0
+      },
+      {
+        "month": "2024-02",
+        "starting_cash": 400.0,
+        "base_takehome_salary": 2000.0,
+        "base_outflows": -1800.0,
+        "total_inflows": 2000.0,
+        "total_outflows": -2000.0,
+        "events_applied": [
+          {
+            "label": "emergency_expense",
+            "start_month": "2024-02",
+            "amount": -200.0,
+            "duration_months": null
+          }
+        ],
+        "ending_cash": 400.0
+      },
+      {
+        "month": "2024-03",
+        "starting_cash": 400.0,
+        "base_takehome_salary": 2000.0,
+        "base_outflows": -1800.0,
+        "total_inflows": 2000.0,
+        "total_outflows": -1800.0,
+        "events_applied": [],
+        "ending_cash": 600.0
+      }
+    ]
+  }
+}

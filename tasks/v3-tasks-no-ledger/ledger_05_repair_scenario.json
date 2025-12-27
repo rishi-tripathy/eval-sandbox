@@ -1,0 +1,54 @@
+{
+  "id": "ledger_05_repair_scenario",
+  "title": "Repair scenario - ledger test",
+  "mode": "fast",
+  "prompt": "Create a financial scenario starting in January 2024, running for 3 months. Starting cash: $800. Monthly takehome: $2500, baseline expenses: $0 (no regular monthly expenses). Add a one-time car repair expense of $4000 in January.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "infeasible",
+    "first_violation_month": "2024-01",
+    "violated_invariant": "LIQUIDITY_FLOOR",
+    "ledger": [
+      {
+        "month": "2024-01",
+        "starting_cash": 800.0,
+        "base_takehome_salary": 2500.0,
+        "base_outflows": 0.0,
+        "total_inflows": 2500.0,
+        "total_outflows": -4000.0,
+        "events_applied": [
+          {
+            "label": "car_repair",
+            "start_month": "2024-01",
+            "amount": -4000.0,
+            "duration_months": null
+          }
+        ],
+        "ending_cash": -700.0
+      },
+      {
+        "month": "2024-02",
+        "starting_cash": -700.0,
+        "base_takehome_salary": 2500.0,
+        "base_outflows": 0.0,
+        "total_inflows": 2500.0,
+        "total_outflows": 0.0,
+        "events_applied": [],
+        "ending_cash": 1800.0
+      },
+      {
+        "month": "2024-03",
+        "starting_cash": 1800.0,
+        "base_takehome_salary": 2500.0,
+        "base_outflows": 0.0,
+        "total_inflows": 2500.0,
+        "total_outflows": 0.0,
+        "events_applied": [],
+        "ending_cash": 4300.0
+      }
+    ]
+  }
+}

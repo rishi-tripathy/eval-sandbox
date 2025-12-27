@@ -1,0 +1,15 @@
+{
+  "id": "graduate_school_prep",
+  "title": "Graduate School Prep - Scattered Information",
+  "mode": "fast",
+  "prompt": "I'm applying to graduate school and there are so many fees involved. The application fees are due in November - $120 per school and I'm applying to 8 schools. Then there's the GRE test in October for $220. My current income is $3800 monthly with expenses of about $3100. I'll also need to visit 3 schools for interviews in December, probably $800 per trip. Starting balance is $2200 in October 2024, and I want to plan through January 2025 to be safe.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "infeasible",
+    "violated_invariant": "LIQUIDITY_FLOOR",
+    "first_violation_month": "2024-12"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "test1",
+  "title": "Simple feasible test",
+  "mode": "fast",
+  "prompt": "Create a financial scenario starting in January 2024, running for 3 months. Starting cash is $1,000. Monthly takehome salary is $2,000 and monthly expenses are $1,500.",
+  "limits": {
+    "max_tool_calls": 10,
+    "max_repairs": 1
+  },
+  "expected": {
+    "initial_verdict": "feasible",
+    "first_violation_month": null,
+    "violated_invariant": null
+  },
+  "generate_ledger": true
+}

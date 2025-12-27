@@ -12,6 +12,7 @@ class Trace(BaseModel):
     run_id: str
     session_id: str
     task_id: str
+    task_name: str
     timestamp: datetime
     model: str
     prompt: str
