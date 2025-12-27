@@ -6,9 +6,11 @@ Supports A/B testing across models, task sets, and other parameters.
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple, Iterator
+from typing import List, Tuple, Iterator, Optional
 import uuid
+import typer
 from workbench.task_types import TaskResult
+from workbench.runner import run_task
 
 
 @dataclass
@@ -125,3 +127,94 @@ def create_comparison_session_id(models: List[str], task_sets: List[str]) -> str
     model_str = "_".join(models)
     task_str = "_".join([Path(ts).name for ts in task_sets])
     return f"comparison_{timestamp}_{model_str}_{task_str}"
+
+
+def run_comparison(config: ComparisonConfig) -> ComparisonResult:
+    """Execute a full comparison across all conditions."""
+    
+    # Generate conditions matrix
+    conditions = generate_comparison_conditions(config)
+    total_executions = len(conditions)
+    
+    # Display comparison overview
+    typer.echo(f"=== COMPARISON: {len(config.models)} models × {len(config.task_sets)} task-sets × {config.runs_per_condition} runs = {total_executions} total ===")
+    
+    results = []
+    execution_count = 0
+    
+    try:
+        for condition in conditions:
+            execution_count += 1
+            
+            # Get task files for this condition
+            task_files = get_task_files_for_set(condition.task_set)
+            
+            # Execute each task in the set
+            for task_file in task_files:
+                # Create unique session ID for this execution
+                execution_session_id = f"{config.session_id}_{condition.condition_id}_{task_file.stem}"
+                
+                # Progress display
+                progress_msg = f"[{execution_count}/{total_executions}] {condition.display_name} (run {condition.run_number}/{config.runs_per_condition}): {task_file.stem}..."
+                typer.echo(progress_msg, nl=False)
+                
+                try:
+                    # Execute the task
+                    result = run_task(
+                        task_path=str(task_file),
+                        model=condition.model,
+                        session_id=execution_session_id,
+                        prompt_dir=config.prompt_dir,
+                        model_name=config.model_name
+                    )
+                    
+                    # Add condition metadata to result
+                    result.condition_model = condition.model
+                    result.condition_task_set = condition.task_set
+                    result.condition_run_number = condition.run_number
+                    result.condition_id = condition.condition_id
+                    
+                    results.append(result)
+                    
+                    # Progress result display 
+                    if result.error_category:
+                        typer.secho(f" error ({result.error_category.value})", fg=typer.colors.RED)
+                    else:
+                        score_display = f"{result.score_earned}/{result.score_possible}" if result.score_earned else "N/A"
+                        typer.secho(f" {result.final_verdict} (Score: {score_display})", fg=typer.colors.GREEN)
+                        
+                except Exception as e:
+                    typer.secho(f" SYSTEM ERROR: {e}", fg=typer.colors.RED)
+                    # Continue with next task rather than failing entire comparison
+                    continue
+                    
+    except KeyboardInterrupt:
+        typer.echo("\n⚠️  Comparison interrupted by user")
+        # Return partial results
+        
+    except Exception as e:
+        typer.secho(f"\n❌ Comparison failed: {e}", fg=typer.colors.RED)
+        raise
+        
+    # Create final result object
+    comparison_result = ComparisonResult(
+        config=config,
+        results=results,
+        conditions=conditions
+    )
+    
+    typer.echo(f"\n✓ Comparison complete. {len(results)} tasks executed.")
+    return comparison_result
+
+
+def group_results_by_condition(comparison_result: ComparisonResult) -> dict:
+    """Group results by model and task set for analysis."""
+    grouped = {}
+    
+    for result in comparison_result.results:
+        key = (result.condition_model, result.condition_task_set)
+        if key not in grouped:
+            grouped[key] = []
+        grouped[key].append(result)
+    
+    return grouped

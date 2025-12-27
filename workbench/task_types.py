@@ -72,3 +72,9 @@ class TaskResult(BaseModel):
     score_earned: Optional[int] = None
     score_possible: Optional[int] = None
     score_percentage: Optional[float] = None
+    
+    # Comparison metadata (optional, for comparison framework)
+    condition_model: Optional[str] = None
+    condition_task_set: Optional[str] = None
+    condition_run_number: Optional[int] = None
+    condition_id: Optional[str] = None
