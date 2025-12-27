@@ -451,6 +451,12 @@ You have access to helpful tools for calculations and validation (calculate, val
                 self.draft_system_prompt = f.read()
             with open(os.path.join(prompt_dir, "repair_system.txt"), "r") as f:
                 self.repair_system_prompt = f.read()
+        
+        # Enhance prompts with tool-aware guidance
+        tool_guidance = "\n\nYou have access to calculation, validation, and advisory tools. Use them to ensure accuracy and validate your work. When you're confident in your response, use the finalize_json tool to clean up your JSON output.\n\nIMPORTANT: Respond with ONLY valid JSON - no explanations, markdown formatting, or additional text. Any characters outside the JSON structure will cause system failure."
+        
+        self.draft_system_prompt += tool_guidance
+        self.repair_system_prompt += tool_guidance
 
 
 def get_agent(model: str) -> BaseAgent:
