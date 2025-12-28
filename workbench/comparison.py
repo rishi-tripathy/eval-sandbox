@@ -181,8 +181,8 @@ def run_comparison(config: ComparisonConfig) -> ComparisonResult:
                     
                     # Progress result display 
                     if result.error_category:
-                        if result.score_percentage is not None:
-                            typer.secho(f" error ({result.error_category.value}, {result.score_percentage:.1f}%)", fg=typer.colors.RED)
+                        if result.score_earned is not None and result.score_possible is not None:
+                            typer.secho(f" error ({result.error_category.value}, {result.score_earned}/{result.score_possible})", fg=typer.colors.RED)
                         else:
                             typer.secho(f" error ({result.error_category.value})", fg=typer.colors.RED)
                     else:

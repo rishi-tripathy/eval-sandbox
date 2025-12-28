@@ -40,7 +40,7 @@ def run_single(
     typer.echo(f"Result: {verdict_display}")
     
     if result.score_earned is not None and result.score_possible is not None:
-        typer.echo(f"Score: {result.score_earned}/{result.score_possible} ({result.score_percentage}%)")
+        typer.echo(f"Score: {result.score_earned}/{result.score_possible}")
         
         # Show scoring breakdown
         from workbench.scoring import calculate_task_score
@@ -63,8 +63,8 @@ def run_single(
         typer.echo(f"Tool calls: {result.tool_calls}")
     
     if result.error_category:
-        if result.score_percentage is not None:
-            typer.secho(f"Error: {result.error_category.value} (partial score: {result.score_percentage:.1f}%)", fg=typer.colors.RED)
+        if result.score_earned is not None and result.score_possible is not None:
+            typer.secho(f"Error: {result.error_category.value} (partial score: {result.score_earned}/{result.score_possible})", fg=typer.colors.RED)
         else:
             typer.secho(f"Error: {result.error_category.value}", fg=typer.colors.RED)
     
@@ -143,8 +143,8 @@ def run_suite(
                 
                 # Show error or success indicator
                 if result.error_category:
-                    if result.score_percentage is not None:
-                        typer.secho(f" {verdict_display}{score_display} ERROR: {result.error_category.value} (partial score: {result.score_percentage:.1f}%)", fg=typer.colors.RED)
+                    if result.score_earned is not None and result.score_possible is not None:
+                        typer.secho(f" {verdict_display}{score_display} ERROR: {result.error_category.value} (partial score: {result.score_earned}/{result.score_possible})", fg=typer.colors.RED)
                     else:
                         typer.secho(f" {verdict_display}{score_display} ERROR: {result.error_category.value}", fg=typer.colors.RED)
                 elif result.repair_made_feasible != False:
@@ -362,8 +362,8 @@ def run_prompt(
             typer.echo(f"  └ {component.replace('_', ' ').title()}: {data['earned']}/{data['possible']}")
     
     if result.error_category:
-        if result.score_percentage is not None:
-            typer.secho(f"Error: {result.error_category.value} (partial score: {result.score_percentage:.1f}%)", fg=typer.colors.RED)
+        if result.score_earned is not None and result.score_possible is not None:
+            typer.secho(f"Error: {result.error_category.value} (partial score: {result.score_earned}/{result.score_possible})", fg=typer.colors.RED)
         else:
             typer.secho(f"Error: {result.error_category.value}", fg=typer.colors.RED)
     
