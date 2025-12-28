@@ -143,7 +143,10 @@ def run_suite(
                 
                 # Show error or success indicator
                 if result.error_category:
-                    typer.secho(f" {verdict_display}{score_display} ERROR: {result.error_category.value}", fg=typer.colors.RED)
+                    if result.score_percentage is not None:
+                        typer.secho(f" {verdict_display}{score_display} ERROR: {result.error_category.value} (partial score: {result.score_percentage:.1f}%)", fg=typer.colors.RED)
+                    else:
+                        typer.secho(f" {verdict_display}{score_display} ERROR: {result.error_category.value}", fg=typer.colors.RED)
                 elif result.repair_made_feasible != False:
                     typer.secho(f" {verdict_display}{score_display} ✅", fg=typer.colors.GREEN)
                 else:
