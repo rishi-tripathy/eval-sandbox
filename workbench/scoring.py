@@ -21,7 +21,10 @@ def calculate_task_score(result: TaskResult, task: Task) -> dict:
     
     # Verdict Accuracy (25 pts - always applies)
     verdict_possible = 25
-    verdict_earned = 25 if result.verdict_correct else 0
+    if result.verdict_correct is None:
+        verdict_earned = 0  # No expected result to compare against
+    else:
+        verdict_earned = 25 if result.verdict_correct else 0
     breakdown["verdict_accuracy"] = {"earned": verdict_earned, "possible": verdict_possible}
     points_earned += verdict_earned
     points_possible += verdict_possible
@@ -30,9 +33,9 @@ def calculate_task_score(result: TaskResult, task: Task) -> dict:
     if result.initial_verdict == "infeasible":
         violation_possible = 20
         violation_earned = 0
-        if result.violation_correct:
+        if result.violation_correct is True:
             violation_earned += 10
-        if result.first_violation_month_correct:
+        if result.first_violation_month_correct is True:
             violation_earned += 10
         breakdown["violation_detection"] = {"earned": violation_earned, "possible": violation_possible}
         points_earned += violation_earned
@@ -44,13 +47,13 @@ def calculate_task_score(result: TaskResult, task: Task) -> dict:
         repair_earned = 0
         
         # Repair effectiveness (15 pts)
-        if result.repair_made_feasible:
+        if result.repair_made_feasible is True:
             repair_earned += 15  # Successful repair
         elif result.error_category == ErrorCategory.REPAIR_FAILED:
             repair_earned += 3   # Attempted but ineffective repair
         
         # Repair labeling accuracy (5 pts) 
-        if result.repair_label_accurate:
+        if result.repair_label_accurate is True:
             repair_earned += 5   # Correctly labeled repair type
         
         breakdown["repair_capability"] = {"earned": repair_earned, "possible": repair_possible}
@@ -61,9 +64,9 @@ def calculate_task_score(result: TaskResult, task: Task) -> dict:
     if task.generate_ledger:
         ledger_possible = 15
         ledger_earned = 0
-        if result.draft_ledger_correct:
+        if result.draft_ledger_correct is True:
             ledger_earned += 10  # Draft ledger accuracy
-        if result.repair_ledger_correct:
+        if result.repair_ledger_correct is True:
             ledger_earned += 5   # Repair ledger accuracy (if applicable)
         breakdown["mathematical_precision"] = {"earned": ledger_earned, "possible": ledger_possible}
         points_earned += ledger_earned

@@ -92,8 +92,10 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
                 draft_scenario_json = draft_parsed
             result.scenario_json = json.dumps(draft_scenario_json)
         except Exception as e:
-            write_trace(trace)
             result.error_category = ErrorCategory.INVALID_JSON
+            result = update_result_with_score(result, task)
+            trace.final_result = result
+            write_trace(trace)
             return result
             
         
@@ -103,8 +105,10 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
             draft_ledger = [MonthlyRecord.model_validate(record) for record in draft_ledger_json]
     
     except Exception as e:
-        write_trace(trace)
         result.error_category = ErrorCategory.SCHEMA_MISMATCH
+        result = update_result_with_score(result, task)
+        trace.final_result = result
+        write_trace(trace)
         return result
     
     start_time = time.time()
@@ -179,8 +183,10 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
             if repair_ledger_json:
                 result.repair_ledger_json = json.dumps(repair_ledger_json)
         except Exception as e:
-            write_trace(trace)
             result.error_category = ErrorCategory.INVALID_JSON
+            result = update_result_with_score(result, task)
+            trace.final_result = result
+            write_trace(trace)
             return result
 
         # Validate repair labels but don't block on this - track for scoring
@@ -195,8 +201,10 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
             if repair_ledger_json:
                 repair_ledger = [MonthlyRecord.model_validate(record) for record in repair_ledger_json]
         except Exception as e:
-            write_trace(trace)
             result.error_category = ErrorCategory.SCHEMA_MISMATCH
+            result = update_result_with_score(result, task)
+            trace.final_result = result
+            write_trace(trace)
             return result
 
         result.repair_attempts += 1

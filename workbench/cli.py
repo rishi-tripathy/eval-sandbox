@@ -63,7 +63,10 @@ def run_single(
         typer.echo(f"Tool calls: {result.tool_calls}")
     
     if result.error_category:
-        typer.secho(f"Error: {result.error_category.value}", fg=typer.colors.RED)
+        if result.score_percentage is not None:
+            typer.secho(f"Error: {result.error_category.value} (partial score: {result.score_percentage:.1f}%)", fg=typer.colors.RED)
+        else:
+            typer.secho(f"Error: {result.error_category.value}", fg=typer.colors.RED)
     
     if verbose:
         typer.echo("\nFull result:")
@@ -356,7 +359,10 @@ def run_prompt(
             typer.echo(f"  └ {component.replace('_', ' ').title()}: {data['earned']}/{data['possible']}")
     
     if result.error_category:
-        typer.secho(f"Error: {result.error_category.value}", fg=typer.colors.RED)
+        if result.score_percentage is not None:
+            typer.secho(f"Error: {result.error_category.value} (partial score: {result.score_percentage:.1f}%)", fg=typer.colors.RED)
+        else:
+            typer.secho(f"Error: {result.error_category.value}", fg=typer.colors.RED)
     
     if verbose:
         typer.echo(f"\nGenerated scenario:")

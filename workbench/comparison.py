@@ -341,13 +341,26 @@ def generate_comparison_report(comparison_result: ComparisonResult) -> str:
     # Error analysis section
     report += "\n\n## Error Analysis\n\n"
     all_errors = defaultdict(int)
+    error_scores = defaultdict(list)  # Track scores for each error type
+    
     for stats in condition_stats.values():
         for error, count in stats.error_categories.items():
             all_errors[error] += count
     
+    # Collect scores by error category
+    for result in comparison_result.results:
+        if result.error_category:
+            error_scores[result.error_category.value].append(result.score_percentage or 0)
+    
     if all_errors:
         for error, total_count in sorted(all_errors.items(), key=lambda x: x[1], reverse=True):
-            report += f"- **{error}**: {total_count} total occurrences\n"
+            # Calculate average partial score for this error type
+            if error in error_scores and error_scores[error]:
+                avg_partial_score = sum(error_scores[error]) / len(error_scores[error])
+                report += f"- **{error}**: {total_count} total occurrences (avg partial score: {avg_partial_score:.1f}%)\n"
+            else:
+                report += f"- **{error}**: {total_count} total occurrences\n"
+            
             # Show breakdown by condition
             for (model, task_set), stats in condition_stats.items():
                 if error in stats.error_categories:
