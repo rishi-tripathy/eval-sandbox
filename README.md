@@ -12,23 +12,27 @@ This evaluation framework tests AI financial reasoning through:
 
 - **Deterministic ledger simulation** with mathematical invariant validation
 - **Two-turn agent workflow**: draft scenario → validate → repair if needed
+- **Tool-calling integration**: calculator, validation, and advisory tools for mathematical precision
+- **Systematic comparison framework**: factorial A/B testing across models, task sets, and configurations
 - **Multi-complexity task progression**: simple structured prompts → complex natural language scenarios
 - **Comprehensive scoring** across scenario generation, mathematical precision, and constraint satisfaction
-- **A/B testing infrastructure** comparing ledger vs non-ledger generation impact
 
 ## What I Learned
 
 **Key Model Insights:**
 
+- **Tool integration complexity**: Counter-intuitively, tool-enabled models initially showed worse performance (48.3 vs 50.8 average score), suggesting prompt engineering challenges
+- **Mathematical precision bottleneck**: ~0% accuracy on ledger calculations despite logical reasoning ability - addressed through calculator tool integration
+- **JSON generation brittleness**: INVALID_JSON remains dominant failure mode even with tool assistance, indicating structural output challenges
 - **Duration modeling systematic errors**: Claude consistently omits `duration_months`, treating one-time expenses as ongoing monthly costs
-- **Mathematical precision bottleneck**: ~0% accuracy on ledger calculations despite logical reasoning ability
 - **Natural language complexity correlation**: 51.9% accuracy on conversational prompts vs 77%+ on structured tasks
-- **Model variation behaviors**: Different Claude versions format responses differently (markdown wrapping vs clean JSON)
 
 **Evaluation Framework Insights:**
 
-- **Intermediate artifacts don't always help**: Requesting detailed calculations sometimes hurts vs helps performance
+- **Systematic comparison reveals non-obvious patterns**: A/B testing infrastructure uncovered that tool integration can initially hurt performance
+- **Intermediate artifacts don't always help**: Requesting detailed calculations sometimes hurts vs helps performance  
 - **Constraint-based repair is learnable**: Models can improve scenarios when given specific violation feedback
+- **Statistical rigor essential**: Single-run evaluations miss important performance variations; multiple runs with aggregation provide reliable insights
 - **Infrastructure enables discovery**: Comprehensive tracing revealed systematic vs random error patterns invisible in manual testing
 
 ## Execution Milestones
@@ -37,8 +41,9 @@ This evaluation framework tests AI financial reasoning through:
 • **M1**: Task runner, traces, error taxonomy, CLI infrastructure  
 • **M2**: Claude integration with constraint-based repair system  
 • **M3**: Advanced scoring, parallel task evaluation, enhanced UX  
-• **M4**: Tool calling integration for mathematical precision _(planned)_  
-• **Optional Extensions**: More advanced tool calling or reasoning model integration, regression testing infrastructure, or metamorphic testing infrastructure
+• **M4**: Tool calling integration with calculator, validation, and advisory tools  
+• **M4.5**: Systematic comparison framework for A/B testing across models and configurations  
+• **Future**: Prompt optimization for tool integration, expanded task complexity, multi-domain evaluation
 
 ## Task Structure
 
@@ -73,9 +78,11 @@ python -m workbench run-single tasks/v2-intermediate/apartment_overlap.json --mo
 # Run an entire suite
 python -m workbench run-suite tasks/v1-simple --model claude --session-id my_test
 
-# Compare ledger vs non-ledger performance
-python -m workbench run-suite tasks/v2-intermediate --model claude
-python -m workbench run-suite tasks/v2-intermediate-no-ledger --model claude
+# Run systematic A/B comparison
+python -m workbench run-comparison --models claude,claude-tools --task-sets tasks/v3-tasks-with-ledger --runs 3
+
+# Compare ledger vs non-ledger impact
+python -m workbench run-comparison --models claude --task-sets tasks/v3-tasks-with-ledger,tasks/v3-tasks-no-ledger --runs 2
 ```
 
 ## Architecture Overview
@@ -94,7 +101,9 @@ python -m workbench run-suite tasks/v2-intermediate-no-ledger --model claude
 
 **Evaluation Pipeline** (`workbench/eval.py`): Main entry point returning verdict + detailed violations
 
-**Agent System** (`workbench/models/agents.py`): Two-turn loop with constrained repair strategies
+**Agent System** (`workbench/models/agents.py`): Two-turn loop with constrained repair strategies, tool-calling integration
+
+**Comparison Framework** (`workbench/comparison.py`): Systematic A/B testing infrastructure with statistical analysis and reporting
 
 ### Key Workflows
 
@@ -102,7 +111,9 @@ python -m workbench run-suite tasks/v2-intermediate-no-ledger --model claude
 
 **Suite Execution**: `python -m workbench run-suite tasks/v1 --model claude --session-id my_session`
 
-**Analysis**: Rich traces in `traces/<session_id>/` with task names in filenames for easy browsing
+**A/B Comparison**: `python -m workbench run-comparison --models claude,claude-tools --task-sets tasks/v3-tasks-with-ledger --runs 3`
+
+**Analysis**: Rich traces in `traces/<session_id>/` with task names in filenames, comparison reports in `reports/`
 
 ## Scoring System
 
@@ -118,9 +129,18 @@ python -m workbench run-suite tasks/v2-intermediate-no-ledger --model claude
 
 ## Current Status
 
-**M3 Complete**: Advanced evaluation infrastructure with comprehensive scoring, parallel testing capability, and rich debugging tools.
+**M4.5 Complete**: Full evaluation infrastructure with tool calling integration, systematic A/B testing framework, and comprehensive statistical analysis.
 
-**Next**: M4 tool calling integration to address the mathematical precision bottleneck and transform Claude's 0% calculation accuracy.
+## Conclusions & Future Directions
+
+This framework successfully demonstrates systematic AI evaluation methodology with deterministic ground truth. The infrastructure is production-ready and reveals important insights about model behavior under structured evaluation.
+
+**Key open questions for future work:**
+- **Tool integration optimization**: Initial results suggest prompt engineering refinements could significantly improve tool-enabled performance
+- **Task complexity thresholds**: Understanding when tools become beneficial vs harmful across difficulty scales
+- **Multi-domain generalization**: Expanding beyond financial scenarios to test framework robustness
+
+The comparison infrastructure enables rapid iteration on these questions through systematic A/B testing methodology.
 
 ---
 
