@@ -14,19 +14,41 @@ import os
 
 
 def strip_markdown_json(text: str) -> str:
-    """Strip markdown code block formatting from JSON text."""
-    # Remove leading ```json or ``` 
+    """Extract JSON content from text, removing explanatory text and markdown formatting."""
     text = text.strip()
+    
+    # Remove markdown code blocks first
     if text.startswith('```json'):
         text = text[7:]  # Remove ```json
     elif text.startswith('```'):
         text = text[3:]   # Remove ```
     
-    # Remove trailing ```
     if text.endswith('```'):
         text = text[:-3]
     
-    return text.strip()
+    text = text.strip()
+    
+    # Find JSON content between curly braces (including nested braces)
+    import re
+    
+    # Find the first opening brace
+    start_idx = text.find('{')
+    if start_idx == -1:
+        return text  # No JSON object found
+    
+    # Find the matching closing brace by counting nested braces
+    brace_count = 0
+    for i, char in enumerate(text[start_idx:], start_idx):
+        if char == '{':
+            brace_count += 1
+        elif char == '}':
+            brace_count -= 1
+            if brace_count == 0:
+                # Found the complete JSON object
+                return text[start_idx:i+1].strip()
+    
+    # Fallback to original text if no complete JSON object found
+    return text
 
 
 def run_task(task_path: str, model: str = "claude", session_id: str = None, prompt_dir: str = "prompts/v2", model_name: str = None) -> TaskResult:
