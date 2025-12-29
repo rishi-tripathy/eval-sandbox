@@ -21,15 +21,18 @@ This evaluation framework tests AI financial reasoning through:
 
 **Key Model Insights:**
 
-- **Tool integration complexity**: Counter-intuitively, tool-enabled models initially showed worse performance (48.3 vs 50.8 average score), suggesting prompt engineering challenges
+- **Tool integration complexity**: Counter-intuitively, tool-enabled models initially showed worse performance due to JSON parsing failures from explanatory text, resolved through enhanced extraction logic  
 - **Mathematical precision bottleneck**: ~0% accuracy on ledger calculations despite logical reasoning ability - addressed through calculator tool integration
-- **JSON generation brittleness**: INVALID_JSON remains dominant failure mode even with tool assistance, indicating structural output challenges
-- **Duration modeling systematic errors**: Claude consistently omits `duration_months`, treating one-time expenses as ongoing monthly costs
+- **JSON generation brittleness**: INVALID_JSON was dominant failure mode (45% of tool-enabled runs), but reduced to 3% through enhanced extraction with brace counting
+- **Duration modeling systematic errors**: Models consistently omit `duration_months: 1` for one-time expenses, causing simulation engine to treat bonuses/costs as ongoing monthly events
+- **Expected verdict validation critical**: Manual verification revealed 2/4 consistently failing tasks had incorrect expected verdicts, penalizing models for correct mathematical reasoning
 - **Natural language complexity correlation**: 51.9% accuracy on conversational prompts vs 77%+ on structured tasks
 
 **Evaluation Framework Insights:**
 
-- **Systematic comparison reveals non-obvious patterns**: A/B testing infrastructure uncovered that tool integration can initially hurt performance
+- **Systematic comparison reveals non-obvious patterns**: A/B testing infrastructure uncovered that tool integration can initially hurt performance, leading to root cause analysis and fixes
+- **Partial scoring prevents information loss**: Enhanced scoring captures diagnostic value from failures, showing 16.7% average partial scores on wrong verdicts vs complete loss
+- **Expected verdict validation essential**: Manual verification of "consistently failing" tasks revealed ground truth errors, highlighting need for mathematical validation of test cases  
 - **Intermediate artifacts don't always help**: Requesting detailed calculations sometimes hurts vs helps performance  
 - **Constraint-based repair is learnable**: Models can improve scenarios when given specific violation feedback
 - **Statistical rigor essential**: Single-run evaluations miss important performance variations; multiple runs with aggregation provide reliable insights
@@ -127,6 +130,26 @@ python -m workbench run-comparison --models claude --task-sets tasks/v3-tasks-wi
 
 **Variable point totals** based on task complexity - repair tasks have more possible points than generation-only tasks.
 
+**Partial Scoring Benefits**: Enhanced scoring system extracts diagnostic value even from failed runs:
+- Component-level analysis (scenario generation vs mathematical calculation vs repair)  
+- Error-tolerant scoring prevents complete information loss on edge cases
+- Statistical significance through multiple runs with partial credit aggregation
+
+## Evaluation Quality Lessons
+
+**Task Validation Protocol**: Our investigation revealed critical evaluation quality issues:
+
+1. **Ground Truth Verification**: 2 out of 4 "consistently failing" tasks had incorrect expected verdicts
+   - vacation_fund: Expected infeasible → Actually feasible (ends July with $200 cash)
+   - home_repair_cascade: Expected infeasible → Actually feasible (ends July with $1700 cash) 
+   - Models were being penalized for correct mathematical reasoning
+
+2. **Model Error vs Test Error**: Distinguishing systematic model failures from evaluation framework bugs requires manual verification of edge cases
+
+3. **Duration Semantics**: Clear specification essential but insufficient - models consistently omit `duration_months: 1` despite explicit prompt warnings
+
+4. **Failure Pattern Analysis**: Consistent cross-model failures warrant ground truth investigation, not model capability assumptions
+
 ## Current Status
 
 **M4.5 Complete**: Full evaluation infrastructure with tool calling integration, systematic A/B testing framework, and comprehensive statistical analysis.
@@ -136,9 +159,17 @@ python -m workbench run-comparison --models claude --task-sets tasks/v3-tasks-wi
 This framework successfully demonstrates systematic AI evaluation methodology with deterministic ground truth. The infrastructure is production-ready and reveals important insights about model behavior under structured evaluation.
 
 **Key open questions for future work:**
-- **Tool integration optimization**: Initial results suggest prompt engineering refinements could significantly improve tool-enabled performance
-- **Task complexity thresholds**: Understanding when tools become beneficial vs harmful across difficulty scales
+- **Tool integration optimization**: Enhanced JSON extraction resolved initial performance degradation - further prompt engineering refinements may unlock additional gains
+- **Task complexity thresholds**: Understanding when tools become beneficial vs harmful across difficulty scales  
+- **Duration specification improvements**: Despite explicit prompt warnings, models consistently omit `duration_months: 1` - exploring alternative specification approaches
+- **Evaluation quality assurance**: Systematic protocols for validating ground truth correctness as task complexity increases
 - **Multi-domain generalization**: Expanding beyond financial scenarios to test framework robustness
+
+**Methodology Contributions**: This framework demonstrates several eval reliability patterns:
+- **Comprehensive tracing enables root cause analysis** of unexpected performance patterns
+- **Partial scoring preserves diagnostic value** from edge cases that would otherwise be discarded  
+- **A/B comparison infrastructure** rapidly identifies regression vs progression across model/prompt combinations
+- **Manual verification protocols** essential for distinguishing model limitations from evaluation framework errors
 
 The comparison infrastructure enables rapid iteration on these questions through systematic A/B testing methodology.
 
