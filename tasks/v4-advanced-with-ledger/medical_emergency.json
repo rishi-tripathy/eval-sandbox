@@ -5,7 +5,7 @@
   "generate_ledger": false,
   "prompt": "Ugh, so my dog needs surgery and it's going to be expensive. The vet said $3700, let's plan for the higher end to be safe. I bring home about $3600 monthly and my regular bills are like $2800. I can probably get the surgery done next month if I have to, or wait a month if it helps financially. Currently sitting on $2000 in my checking account. This is for April 2024 start, looking at just 3 months to keep it simple.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

@@ -4,7 +4,7 @@
   "mode": "fast",
   "prompt": "This is a test prompt - stub will ignore it",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

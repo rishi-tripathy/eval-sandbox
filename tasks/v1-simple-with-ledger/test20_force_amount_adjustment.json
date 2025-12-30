@@ -4,7 +4,7 @@
   "mode": "fast",
   "prompt": "Create a financial scenario starting in January 2024, running for 3 months. Starting cash: $1200. Monthly takehome: $3500, baseline expenses: $3200. Add a security deposit of $2800 due in January (apartment lease starts then).",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

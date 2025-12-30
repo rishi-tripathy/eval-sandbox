@@ -324,7 +324,7 @@ def run_prompt(
         mode="fast",
         generate_ledger=generate_ledger,
         prompt=prompt,  # Use raw prompt - no injection
-        limits=Limits(max_tool_calls=10, max_repairs=1),
+        limits=Limits(max_tool_calls=20, max_repairs=1),
         expected=None  # No expected results for direct prompts
     )
     

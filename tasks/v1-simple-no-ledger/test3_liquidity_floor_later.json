@@ -4,7 +4,7 @@
   "mode": "fast",
   "prompt": "Create a financial scenario starting in January 2024, running for 6 months. Starting cash is $2,000. Monthly takehome salary is $3,000 and monthly expenses are $3,500.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

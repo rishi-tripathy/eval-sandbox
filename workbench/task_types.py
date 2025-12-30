@@ -9,7 +9,7 @@ class Expected(BaseModel):
     violated_invariant: Optional[InvariantType] = None
     ledger: Optional[List[MonthlyRecord]] = None
 class Limits(BaseModel):
-    max_tool_calls: Optional[int] = 10
+    max_tool_calls: Optional[int] = 20
     max_repairs: Optional[int] = 1
 
 class Task(BaseModel):

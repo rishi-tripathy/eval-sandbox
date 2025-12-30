@@ -5,7 +5,7 @@
   "generate_ledger": true,
   "prompt": "I make $3900 monthly with $3100 expenses. I have three weddings coming up: $800 in June, $650 in July, and $900 in August for travel, gifts, and outfits. I have $600 in savings. Timeline: May through September 2024.",
   "limits": {
-    "max_tool_calls": 5,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

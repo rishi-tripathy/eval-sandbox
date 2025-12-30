@@ -4,7 +4,7 @@
   "mode": "fast",
   "prompt": "I need to set up a home office soon since I'm starting remote work. The desk and chair I want will run me about $1800 total. My monthly take-home is $3900 and I spend roughly $3200 on the usual stuff. I should probably get the equipment next month, but might wait until the month after if money's tight. Also getting a work-from-home stipend of $500 starting when I begin remote work, which is next month. Begin planning from January 2024 with $1200 in savings for a 4-month period.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

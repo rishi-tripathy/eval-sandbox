@@ -4,7 +4,7 @@
   "mode": "fast",
   "prompt": "Pretty straightforward situation here. I make $4000 monthly, spend about $3700. Getting a bonus of $2000 in March. Starting February 2024 with $1500, planning for 4 months total.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

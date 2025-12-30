@@ -4,7 +4,7 @@
   "mode": "fast", 
   "prompt": "Create a financial scenario for someone moving apartments. Start in January 2024, run for 12 months. Starting cash: $20,000. Monthly takehome: $8,000, baseline expenses: $2,500. Old rent is $3,200 for January and February. New rent starts in February at $3,800 and continues. In February only: pay new apartment deposit of $3,800 and broker fee of $3,800.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

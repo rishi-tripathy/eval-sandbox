@@ -5,7 +5,7 @@
   "generate_ledger": true,
   "prompt": "I'm in sales with base pay of $2800/month plus commissions that usually add $1500/month. My total expenses are $3900/month. Due to market conditions, I expect zero commissions in June and July, then commissions return to normal in August. I have $4800 saved. Timeline: May through September 2024.",
   "limits": {
-    "max_tool_calls": 5,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

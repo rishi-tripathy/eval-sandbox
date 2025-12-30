@@ -4,7 +4,7 @@
   "mode": "fast",
   "prompt": "Create a financial scenario starting in January 2024, running for 12 months. Starting cash: $10,000. Monthly takehome: $3,000, monthly expenses: $4,000. No additional events.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

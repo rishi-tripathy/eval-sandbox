@@ -4,7 +4,7 @@
   "mode": "fast",
   "prompt": "Create a financial scenario starting in November 2024, running for 4 months. Starting cash: $5,000. Monthly takehome: $3,000, expenses: $2,000. Add a holiday bonus of $5,000 in December 2024. Add new year expense of $2,000 in January 2025.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

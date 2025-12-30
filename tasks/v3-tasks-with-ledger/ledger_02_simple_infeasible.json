@@ -5,7 +5,7 @@
   "generate_ledger": true,
   "prompt": "Create a financial scenario starting in January 2024, running for 2 months. Starting cash: $1000. Monthly takehome: $2000, baseline expenses: $1500 (monthly outflows). Add a one-time emergency expense of $3000 in January.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

@@ -5,7 +5,7 @@
   "generate_ledger": true,
   "prompt": "I make $4800 monthly with $3600 expenses. My roof needs fixing in June ($3500), which will reveal plumbing issues requiring another $2200 in July. I have $5000 saved up. Planning June through October 2024.",
   "limits": {
-    "max_tool_calls": 5,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

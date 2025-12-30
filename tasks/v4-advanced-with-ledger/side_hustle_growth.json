@@ -5,7 +5,7 @@
   "generate_ledger": true,
   "prompt": "My main job pays $3200 monthly, but I also have this side business that's been bringing in an extra $800 per month. Monthly expenses are around $3400 total. I want to invest $2500 in June to expand the side business - new equipment and marketing stuff. The investment should pay off by August when I expect the side income to jump to $1200 monthly instead. Oh, I've got $1800 saved up right now. Timeline: May 2024 through December.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

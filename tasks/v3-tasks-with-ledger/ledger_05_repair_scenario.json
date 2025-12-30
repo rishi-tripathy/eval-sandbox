@@ -5,7 +5,7 @@
   "generate_ledger": true,
   "prompt": "Create a financial scenario starting in January 2024, running for 3 months. Starting cash: $800. Monthly takehome: $2500, baseline expenses: $0 (no regular monthly expenses). Add a one-time car repair expense of $4000 in January.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

@@ -4,7 +4,7 @@
   "mode": "fast",
   "prompt": "Create a financial scenario starting in January 2024, running for 4 months. Starting cash: $1500. Monthly takehome: $2500, baseline expenses: $2000 (monthly outflows). Add a security deposit of $1000 in January and a bonus payment of $800 in March.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

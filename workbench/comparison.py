@@ -380,11 +380,19 @@ def generate_comparison_report(comparison_result: ComparisonResult) -> str:
         
         for (model, task_set, model_index), stats in condition_stats.items():
             task_set_name = Path(task_set).name
+            
+            # Show both agent type and specific model name clearly
+            model_name = config.get_model_name(model, model_index)
+            if model_name:
+                model_display = f"{model} → {model_name}"
+            else:
+                model_display = model
+            
             if stats.tool_usage_total > 0:
                 tool_breakdown = ", ".join([f"{tool}: {count}" for tool, count in stats.tool_usage_breakdown.items()])
-                report += f"| {model} | {task_set_name} | {stats.tool_usage_total} | {tool_breakdown} |\n"
+                report += f"| {model_display} | {task_set_name} | {stats.tool_usage_total} | {tool_breakdown} |\n"
             else:
-                report += f"| {model} | {task_set_name} | 0 | None |\n"
+                report += f"| {model_display} | {task_set_name} | 0 | None |\n"
     
     # Error analysis section
     report += "\n\n## Error Analysis\n\n"

@@ -5,7 +5,7 @@
   "generate_ledger": true,
   "prompt": "My car just died and I need a replacement. I make $5200/month with $4100 expenses. I can get a used car for $8500 down payment in June, which will add $320/month in payments starting July. I have $6200 in savings. Timeline: May through October 2024.",
   "limits": {
-    "max_tool_calls": 5,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

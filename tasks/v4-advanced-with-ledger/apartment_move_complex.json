@@ -5,7 +5,7 @@
   "generate_ledger": true,
   "prompt": "Starting in January 2024 with $1000 in the bank. I currently make $4500 monthly after taxes and spend about $3200 on regular stuff. I'm planning to move apartments in March - the new place costs $2800/month instead of my current $2000 rent, plus there's a $3500 broker fee when I sign the lease. My lease starts April 1st but I need to pay the broker fee in March when I sign. Oh, and I have to pay first month's rent upfront too when I sign in March. Need to plan for 6 months total.",
   "limits": {
-    "max_tool_calls": 10,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

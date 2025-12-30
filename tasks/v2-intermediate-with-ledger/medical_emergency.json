@@ -5,7 +5,7 @@
   "generate_ledger": true,
   "prompt": "I earn $3600 monthly with $2800 regular expenses. In June I need emergency surgery costing $4500, and I'll have reduced income of $2000/month for July and August while recovering. I have $3500 in savings. Timeline: May through October 2024.",
   "limits": {
-    "max_tool_calls": 5,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

@@ -5,7 +5,7 @@
   "generate_ledger": true,
   "prompt": "My monthly income is $4100 with $3300 expenses. My dog needs surgery in May costing $2800, plus ongoing medication of $120/month starting in June. I have $1500 in savings. Planning May through October 2024.",
   "limits": {
-    "max_tool_calls": 5,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

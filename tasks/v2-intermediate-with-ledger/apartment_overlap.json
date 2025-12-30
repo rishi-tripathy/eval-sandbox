@@ -5,7 +5,7 @@
   "generate_ledger": true,
   "prompt": "I make $4600 monthly with $2800 non-rent expenses. Currently paying $1400 rent. Moving in July - need to pay $2100 for new place starting July 1st, but old lease runs until August 31st. Security deposit of $2100 due in June. I have $7600 saved. Timeline: June through September 2024.",
   "limits": {
-    "max_tool_calls": 5,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {
