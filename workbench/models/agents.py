@@ -275,23 +275,36 @@ class ClaudeToolsAgent(BaseAgent):
                 # Check if Claude used tools
                 if response.stop_reason == "tool_use":
                     # Process tool calls
+                    tool_results = []
+                    exceeded_limit = False
+                    
                     for content_block in response.content:
                         if content_block.type == "tool_use":
                             tool_calls_used += 1
                             if tool_calls_used > max_tool_calls:
-                                # Exceed limit - return what we have
+                                # Exceed limit - stop processing but don't break conversation
+                                exceeded_limit = True
                                 break
                             
                             # Execute the tool and track usage
                             tool_result = self._execute_tool(content_block.name, content_block.input)
                             tool_usage[content_block.name] += 1
                             
-                            # Add assistant's response and tool result to conversation
-                            messages.append({"role": "assistant", "content": response.content})
-                            messages.append({
-                                "role": "user", 
-                                "content": [{"type": "tool_result", "tool_use_id": content_block.id, "content": str(tool_result)}]
+                            # Store tool result for later
+                            tool_results.append({
+                                "type": "tool_result", 
+                                "tool_use_id": content_block.id, 
+                                "content": str(tool_result)
                             })
+                    
+                    # Only add messages if we processed all tool calls successfully
+                    if not exceeded_limit:
+                        # Add assistant's response and all tool results
+                        messages.append({"role": "assistant", "content": response.content})
+                        messages.append({"role": "user", "content": tool_results})
+                    else:
+                        # Hit limit - exit the main loop
+                        break
                     
                     # Add tool usage reminder if getting close to limit
                     if tool_calls_used >= max_tool_calls - 2:
@@ -361,23 +374,36 @@ class ClaudeToolsAgent(BaseAgent):
                 # Check if Claude used tools
                 if response.stop_reason == "tool_use":
                     # Process tool calls
+                    tool_results = []
+                    exceeded_limit = False
+                    
                     for content_block in response.content:
                         if content_block.type == "tool_use":
                             tool_calls_used += 1
                             if tool_calls_used > max_tool_calls:
-                                # Exceed limit - return what we have
+                                # Exceed limit - stop processing but don't break conversation
+                                exceeded_limit = True
                                 break
                             
                             # Execute the tool and track usage
                             tool_result = self._execute_tool(content_block.name, content_block.input)
                             tool_usage[content_block.name] += 1
                             
-                            # Add assistant's response and tool result to conversation
-                            messages.append({"role": "assistant", "content": response.content})
-                            messages.append({
-                                "role": "user", 
-                                "content": [{"type": "tool_result", "tool_use_id": content_block.id, "content": str(tool_result)}]
+                            # Store tool result for later
+                            tool_results.append({
+                                "type": "tool_result", 
+                                "tool_use_id": content_block.id, 
+                                "content": str(tool_result)
                             })
+                    
+                    # Only add messages if we processed all tool calls successfully
+                    if not exceeded_limit:
+                        # Add assistant's response and all tool results
+                        messages.append({"role": "assistant", "content": response.content})
+                        messages.append({"role": "user", "content": tool_results})
+                    else:
+                        # Hit limit - exit the main loop
+                        break
                     
                     # Add tool usage reminder if getting close to limit
                     if tool_calls_used >= max_tool_calls - 2:

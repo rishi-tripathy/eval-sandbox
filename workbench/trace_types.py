@@ -15,7 +15,8 @@ class Trace(BaseModel):
     task_id: str
     task_name: str
     timestamp: datetime
-    model: str
+    model: str  # Agent type (claude, claude-tools, stub)
+    model_name: Optional[str] = None  # Specific Claude model (claude-3-5-haiku-20241022)
     prompt: str
     execution_steps: List[ExecutionStep]
     final_result: Optional[Any] = None

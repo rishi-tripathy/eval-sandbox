@@ -74,7 +74,9 @@ class TaskResult(BaseModel):
     score_percentage: Optional[float] = None
     
     # Comparison metadata (optional, for comparison framework)
-    condition_model: Optional[str] = None
+    condition_model: Optional[str] = None  # Agent type (claude, claude-tools, stub)
+    condition_model_name: Optional[str] = None  # Specific Claude model name
     condition_task_set: Optional[str] = None
     condition_run_number: Optional[int] = None
     condition_id: Optional[str] = None
+    condition_model_index: Optional[int] = None

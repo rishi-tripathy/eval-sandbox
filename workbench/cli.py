@@ -22,7 +22,13 @@ def run_single(
     model_name: str = typer.Option(None, "--model-name", help="Name of the model to use")
 ):
     """Run a single task and display results."""
-    typer.echo(f"Running task: {task_path}")
+    # Display what we're running
+    if model_name:
+        typer.echo(f"Running task: {task_path}")
+        typer.echo(f"Agent: {model}, Model: {model_name}")
+    else:
+        typer.echo(f"Running task: {task_path}")
+        typer.echo(f"Agent: {model}")
     
     session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M_%S')}_{str(uuid.uuid4())[:8]}"
     result = run_task(str(task_path), model=model, session_id=session_id, prompt_dir=prompt_dir, model_name=model_name)
@@ -381,7 +387,8 @@ def comparison_cli(
     runs: int = typer.Option(5, "--runs", help="Number of runs per condition"),
     session_id: Optional[str] = typer.Option(None, "--session-id", help="Custom session ID (auto-generated if not provided)"),
     prompt_dir: str = typer.Option("prompts/v2", "--prompts", help="Directory containing prompt files"),
-    model_name: Optional[str] = typer.Option(None, "--model-name", help="Specific model name to pass to API"),
+    model_name: Optional[str] = typer.Option(None, "--model-name", help="Specific model name to pass to API (applies to all models)"),
+    model_names: Optional[str] = typer.Option(None, "--model-names", help="Per-model names as model:name pairs (e.g., claude:claude-3-5-sonnet-20241022,haiku:claude-3-5-haiku-20241022)"),
     output_dir: str = typer.Option("reports", "--output", help="Output directory for results")
 ):
     """Run systematic comparison across models and task sets."""
@@ -401,6 +408,38 @@ def comparison_cli(
                 typer.secho(f"❌ No task files found in: {task_set}", fg=typer.colors.RED)
                 raise typer.Exit(1)
         
+        # Parse model-names parameter if provided
+        parsed_model_names = None
+        if model_names:
+            try:
+                parsed_model_names = {}
+                model_pairs = model_names.split(",")
+                models_list = [m.strip() for m in models.split(",")]
+                
+                # Handle by position if we have duplicate model types
+                if len(model_pairs) == len(models_list):
+                    # Map by position: first model-name to first model, etc.
+                    for i, pair in enumerate(model_pairs):
+                        model_key, model_value = pair.strip().split(":", 1)
+                        # Use model index as key for duplicates
+                        index_key = f"{models_list[i]}_{i}"
+                        parsed_model_names[index_key] = model_value.strip()
+                    typer.echo(f"📝 Using positional model names mapping")
+                else:
+                    # Legacy behavior: map by model name
+                    for pair in model_pairs:
+                        model_key, model_value = pair.strip().split(":", 1)
+                        parsed_model_names[model_key.strip()] = model_value.strip()
+                    typer.echo(f"📝 Using per-model names: {parsed_model_names}")
+            except ValueError as e:
+                typer.secho(f"❌ Invalid model-names format. Expected model:name pairs separated by commas (e.g., claude:claude-3-5-sonnet-20241022,claude-tools:claude-3-5-haiku-20241022)", fg=typer.colors.RED)
+                raise typer.Exit(1)
+        
+        # Validate that model-name and model-names are not both provided
+        if model_name and model_names:
+            typer.secho(f"❌ Cannot specify both --model-name and --model-names. Use --model-names for per-model specification.", fg=typer.colors.RED)
+            raise typer.Exit(1)
+        
         # Create configuration
         config = ComparisonConfig.from_csv_params(
             models_csv=models,
@@ -408,12 +447,21 @@ def comparison_cli(
             runs_per_condition=runs,
             session_id=session_id,
             prompt_dir=prompt_dir,
-            model_name=model_name
+            model_name=model_name,
+            model_names=parsed_model_names
         )
         
         # Display comparison plan
         typer.echo(f"🔬 Comparison Configuration:")
         typer.echo(f"   Models: {', '.join(config.models)}")
+        if config.model_names or config.model_name:
+            typer.echo(f"   Agent → Model Mapping:")
+            for i, model in enumerate(config.models):
+                model_name_to_use = config.get_model_name(model, i)
+                if model_name_to_use:
+                    typer.echo(f"     - Agent: {model} → Model: {model_name_to_use}")
+                else:
+                    typer.echo(f"     - Agent: {model} → Model: (default)")
         typer.echo(f"   Task Sets: {', '.join([Path(ts).name for ts in config.task_sets])}")
         typer.echo(f"   Runs per condition: {config.runs_per_condition}")
         typer.echo(f"   Total executions: {config.total_executions()}")

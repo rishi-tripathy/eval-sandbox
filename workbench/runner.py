@@ -56,7 +56,7 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     if session_id is None:
           session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
     
-    trace = init_trace(task.id, task.title, model, task.prompt, session_id)    
+    trace = init_trace(task.id, task.title, model, task.prompt, session_id, model_name)    
     agent = get_agent(model)
 
     draft_ledger_json = None
@@ -288,7 +288,7 @@ def run_task(task_path: str, model: str = "claude", session_id: str = None, prom
     write_trace(trace)
     return result
 
-def init_trace(task_id: str, task_name: str, model: str, prompt: str, session_id: str) -> Trace:
+def init_trace(task_id: str, task_name: str, model: str, prompt: str, session_id: str, model_name: str = None) -> Trace:
     return Trace(
         run_id=str(uuid.uuid4()),
         session_id=session_id,
@@ -296,6 +296,7 @@ def init_trace(task_id: str, task_name: str, model: str, prompt: str, session_id
         task_name=task_name,
         timestamp=datetime.now(),
         model=model,
+        model_name=model_name,
         prompt=prompt,
         execution_steps=[],
         final_result=None

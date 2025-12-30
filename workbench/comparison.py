@@ -24,7 +24,8 @@ class ComparisonConfig:
     runs_per_condition: int
     session_id: str
     prompt_dir: str = "prompts/v2"
-    model_name: str = None
+    model_name: str = None  # Deprecated: use model_names instead
+    model_names: Dict[str, str] = None  # Map of model -> specific model name
 
     @classmethod
     def from_csv_params(
@@ -34,7 +35,8 @@ class ComparisonConfig:
         runs_per_condition: int = 5,
         session_id: str = None,
         prompt_dir: str = "prompts/v2",
-        model_name: str = None
+        model_name: str = None,
+        model_names: Dict[str, str] = None
     ) -> "ComparisonConfig":
         """Create config from CSV parameters."""
         models = [m.strip() for m in models_csv.split(",")]
@@ -50,7 +52,8 @@ class ComparisonConfig:
             runs_per_condition=runs_per_condition,
             session_id=session_id,
             prompt_dir=prompt_dir,
-            model_name=model_name
+            model_name=model_name,
+            model_names=model_names
         )
 
     def total_executions(self) -> int:
@@ -60,6 +63,18 @@ class ComparisonConfig:
     def total_conditions(self) -> int:
         """Calculate total number of unique conditions."""
         return len(self.models) * len(self.task_sets)
+    
+    def get_model_name(self, model: str, index: int = 0) -> Optional[str]:
+        """Get the specific model name for a given model, with fallback logic."""
+        if self.model_names:
+            # Try indexed key first (for duplicate models)
+            index_key = f"{model}_{index}"
+            if index_key in self.model_names:
+                return self.model_names[index_key]
+            # Fallback to non-indexed key
+            if model in self.model_names:
+                return self.model_names[model]
+        return self.model_name  # Fallback to legacy single model_name
 
 
 @dataclass
@@ -69,6 +84,7 @@ class ComparisonCondition:
     task_set: str
     run_number: int
     condition_id: str
+    model_index: int = 0  # Index of this model in the models list
     
     @property
     def display_name(self) -> str:
@@ -96,7 +112,7 @@ def generate_comparison_conditions(config: ComparisonConfig) -> List[ComparisonC
     """Generate the matrix of conditions to execute."""
     conditions = []
     
-    for model in config.models:
+    for model_index, model in enumerate(config.models):
         for task_set in config.task_sets:
             for run in range(1, config.runs_per_condition + 1):
                 condition_id = f"{model}_{Path(task_set).name}_run{run}"
@@ -104,7 +120,8 @@ def generate_comparison_conditions(config: ComparisonConfig) -> List[ComparisonC
                     model=model,
                     task_set=task_set,
                     run_number=run,
-                    condition_id=condition_id
+                    condition_id=condition_id,
+                    model_index=model_index
                 )
                 conditions.append(condition)
     
@@ -158,7 +175,14 @@ def run_comparison(config: ComparisonConfig) -> ComparisonResult:
                 execution_session_id = f"{config.session_id}_{condition.condition_id}"
                 
                 # Progress display
-                progress_msg = f"[{execution_count}/{total_executions}] {condition.display_name} (run {condition.run_number}/{config.runs_per_condition}): {task_file.stem}..."
+                agent_type = condition.model
+                model_name = config.get_model_name(condition.model, condition.model_index)
+                if model_name:
+                    agent_display = f"{agent_type}({model_name})"
+                else:
+                    agent_display = agent_type
+                    
+                progress_msg = f"[{execution_count}/{total_executions}] {agent_display}+{Path(condition.task_set).name} (run {condition.run_number}/{config.runs_per_condition}): {task_file.stem}..."
                 typer.echo(progress_msg, nl=False)
                 
                 try:
@@ -168,14 +192,16 @@ def run_comparison(config: ComparisonConfig) -> ComparisonResult:
                         model=condition.model,
                         session_id=execution_session_id,
                         prompt_dir=config.prompt_dir,
-                        model_name=config.model_name
+                        model_name=config.get_model_name(condition.model, condition.model_index)
                     )
                     
                     # Add condition metadata to result
                     result.condition_model = condition.model
+                    result.condition_model_name = config.get_model_name(condition.model, condition.model_index)
                     result.condition_task_set = condition.task_set
                     result.condition_run_number = condition.run_number
                     result.condition_id = condition.condition_id
+                    result.condition_model_index = condition.model_index
                     
                     results.append(result)
                     
@@ -213,12 +239,12 @@ def run_comparison(config: ComparisonConfig) -> ComparisonResult:
     return comparison_result
 
 
-def group_results_by_condition(comparison_result: ComparisonResult) -> Dict[Tuple[str, str], List[TaskResult]]:
-    """Group results by model and task set for analysis."""
+def group_results_by_condition(comparison_result: ComparisonResult) -> Dict[Tuple[str, str, int], List[TaskResult]]:
+    """Group results by model, task set, and model index for analysis."""
     grouped = {}
     
     for result in comparison_result.results:
-        key = (result.condition_model, result.condition_task_set)
+        key = (result.condition_model, result.condition_task_set, result.condition_model_index or 0)
         if key not in grouped:
             grouped[key] = []
         grouped[key].append(result)
@@ -296,8 +322,8 @@ def generate_comparison_report(comparison_result: ComparisonResult) -> str:
     
     # Calculate stats for each condition
     condition_stats = {}
-    for (model, task_set), results in grouped_results.items():
-        condition_stats[(model, task_set)] = calculate_condition_stats(results)
+    for (model, task_set, model_index), results in grouped_results.items():
+        condition_stats[(model, task_set, model_index)] = calculate_condition_stats(results)
     
     # Generate report
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
@@ -305,7 +331,19 @@ def generate_comparison_report(comparison_result: ComparisonResult) -> str:
     report = f"""# Comparison Report: {timestamp}
 
 ## Configuration
-- Models: {', '.join(config.models)}
+- Models: {', '.join(config.models)}"""
+    
+    # Add model names if specified
+    if config.model_names or config.model_name:
+        report += "\n- Agent → Model Mapping:"
+        for i, model in enumerate(config.models):
+            model_name = config.get_model_name(model, i)
+            if model_name:
+                report += f"\n  - Agent: {model} → Model: {model_name}"
+            else:
+                report += f"\n  - Agent: {model} → Model: (default)"
+    
+    report += f"""
 - Task Sets: {', '.join([Path(ts).name for ts in config.task_sets])}
 - Runs per condition: {config.runs_per_condition}
 - Total executions: {len(comparison_result.results)}
@@ -316,16 +354,23 @@ def generate_comparison_report(comparison_result: ComparisonResult) -> str:
 |-------|----------|-----------|--------------|-------------|------------|"""
 
     # Add table rows
-    for (model, task_set), stats in condition_stats.items():
+    for (model, task_set, model_index), stats in condition_stats.items():
         task_set_name = Path(task_set).name
         score_display = f"{stats.average_score:.1f} ± {stats.score_std:.1f}"
         success_display = f"{stats.success_rate:.1f}%"
+        
+        # Show both agent type and specific model name clearly
+        model_name = config.get_model_name(model, model_index)
+        if model_name:
+            model_display = f"{model} → {model_name}"
+        else:
+            model_display = model
         
         # Top 2 errors
         top_errors = sorted(stats.error_categories.items(), key=lambda x: x[1], reverse=True)[:2]
         error_display = ", ".join([f"{error} ({count})" for error, count in top_errors]) if top_errors else "None"
         
-        report += f"\n| {model} | {task_set_name} | {score_display} | {success_display} | {stats.total_tasks} | {error_display} |"
+        report += f"\n| {model_display} | {task_set_name} | {score_display} | {success_display} | {stats.total_tasks} | {error_display} |"
     
     # Tool usage section
     if any(stats.tool_usage_total > 0 for stats in condition_stats.values()):
@@ -333,7 +378,7 @@ def generate_comparison_report(comparison_result: ComparisonResult) -> str:
         report += "| Model | Task Set | Total Calls | Tool Breakdown |\n"
         report += "|-------|----------|-------------|----------------|\n"
         
-        for (model, task_set), stats in condition_stats.items():
+        for (model, task_set, model_index), stats in condition_stats.items():
             task_set_name = Path(task_set).name
             if stats.tool_usage_total > 0:
                 tool_breakdown = ", ".join([f"{tool}: {count}" for tool, count in stats.tool_usage_breakdown.items()])
@@ -365,7 +410,7 @@ def generate_comparison_report(comparison_result: ComparisonResult) -> str:
                 report += f"- **{error}**: {total_count} total occurrences\n"
             
             # Show breakdown by condition
-            for (model, task_set), stats in condition_stats.items():
+            for (model, task_set, model_index), stats in condition_stats.items():
                 if error in stats.error_categories:
                     count = stats.error_categories[error]
                     report += f"  - {model} + {Path(task_set).name}: {count}\n"
@@ -379,23 +424,36 @@ def generate_comparison_report(comparison_result: ComparisonResult) -> str:
     if len(config.models) > 1:
         model_scores = {}
         model_success = {}
-        for (model, task_set), stats in condition_stats.items():
-            if model not in model_scores:
-                model_scores[model] = []
-                model_success[model] = []
-            model_scores[model].append(stats.average_score)
-            model_success[model].append(stats.success_rate)
+        for (model, task_set, model_index), stats in condition_stats.items():
+            # Use model+index as key to handle duplicates
+            model_key = f"{model}_{model_index}"
+            if model_key not in model_scores:
+                model_scores[model_key] = []
+                model_success[model_key] = []
+            model_scores[model_key].append(stats.average_score)
+            model_success[model_key].append(stats.success_rate)
         
-        for model in config.models:
-            avg_score = sum(model_scores[model]) / len(model_scores[model])
-            avg_success = sum(model_success[model]) / len(model_success[model])
-            report += f"- **{model}**: {avg_score:.1f} avg score, {avg_success:.1f}% success rate\n"
+        # Process each unique model+index combination
+        for i, model in enumerate(config.models):
+            model_key = f"{model}_{i}"
+            if model_key in model_scores:
+                avg_score = sum(model_scores[model_key]) / len(model_scores[model_key])
+                avg_success = sum(model_success[model_key]) / len(model_success[model_key])
+                
+                # Show both agent type and specific model name clearly
+                model_name = config.get_model_name(model, i)
+                if model_name:
+                    model_display = f"{model} → {model_name}"
+                else:
+                    model_display = model
+                
+                report += f"- **{model_display}**: {avg_score:.1f} avg score, {avg_success:.1f}% success rate\n"
     
     # Compare task sets if multiple
     if len(config.task_sets) > 1:
         report += "\n"
         task_set_scores = {}
-        for (model, task_set), stats in condition_stats.items():
+        for (model, task_set, model_index), stats in condition_stats.items():
             task_name = Path(task_set).name
             if task_name not in task_set_scores:
                 task_set_scores[task_name] = []
@@ -425,6 +483,12 @@ def save_comparison_results(comparison_result: ComparisonResult, output_dir: str
         "total_executions": len(comparison_result.results),
         "timestamp": datetime.now().isoformat()
     }
+    
+    # Add model names if specified
+    if comparison_result.config.model_names:
+        config_data["model_names"] = comparison_result.config.model_names
+    if comparison_result.config.model_name:
+        config_data["model_name"] = comparison_result.config.model_name
     
     with open(output_path / "config.json", "w") as f:
         json.dump(config_data, f, indent=2)

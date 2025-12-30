@@ -37,7 +37,20 @@ def run_prompt_task(
     
     try:
         # Get Claude's response to raw prompt
-        draft_data = agent.draft(task.prompt, task.mode, task.generate_ledger, "prompts/v2", model_name)
+        draft_result = agent.draft(task.prompt, task.mode, task.generate_ledger, "prompts/v2", model_name)
+        
+        # Handle tuple return from tool-enabled agents
+        if isinstance(draft_result, tuple):
+            if len(draft_result) == 3:
+                # ClaudeToolsAgent with tool tracking
+                draft_data, tool_calls_used, tool_details = draft_result
+            else:
+                # Old tuple format
+                draft_data, tool_calls_used = draft_result
+        else:
+            # Non-tool models: direct string return
+            draft_data = draft_result
+            
         draft_parsed = json.loads(draft_data)
         
         if task.generate_ledger:

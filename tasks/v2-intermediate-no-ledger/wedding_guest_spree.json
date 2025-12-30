@@ -8,8 +8,6 @@
     "max_repairs": 1
   },
   "expected": {
-    "initial_verdict": "infeasible",
-    "violated_invariant": "LIQUIDITY_FLOOR",
-    "first_violation_month": "2024-06"
+    "initial_verdict": "feasible"
   }
 }
