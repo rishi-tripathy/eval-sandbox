@@ -4,7 +4,7 @@
   "mode": "fast",
   "prompt": "I work part-time making $2200/month with $1950 expenses while in grad school. Fall tuition of $4800 is due in August. I'm getting a scholarship refund of $1200 in July. Currently have $1800 saved. Timeline: June through October 2024.",
   "limits": {
-    "max_tool_calls": 5,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

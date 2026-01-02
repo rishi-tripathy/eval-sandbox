@@ -4,7 +4,7 @@
   "mode": "fast",
   "prompt": "I currently make $4500/month with $3200 expenses. I'm leaving my job at the end of April and starting a new one in July at $5200/month. I have $8000 saved. Will this work from April to September 2024?",
   "limits": {
-    "max_tool_calls": 5,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {

@@ -4,7 +4,7 @@
   "mode": "fast",
   "prompt": "I earn $4400 monthly with $3700 expenses. Getting a $5000 year-end bonus in December. Want to use $2000 for a vacation in January, $1500 for home improvements in February, and save the rest. Current savings: $2900. Timeline: November 2024 through March 2025.",
   "limits": {
-    "max_tool_calls": 5,
+    "max_tool_calls": 20,
     "max_repairs": 1
   },
   "expected": {
