@@ -9,9 +9,8 @@ This document contains the comprehensive technical analysis supporting the findi
 - 696 total task executions across 2×2×3×2 factorial design
 - Task complexity dominates: 11.7-point gap between easiest and hardest task sets
 - Invariant maintenance degrades with complexity: 90% success on simple tasks → 61% on complex tasks
-- Tool effects minimal: +0.5 points overall (+2.8% success rate)  
+- Tool effects minimal: +0.5 points overall (+2.8% success rate)
 - Intermediate reasoning artifacts consistently effective: +5.5 points (+5.0% success rate) across all conditions
-- Ground truth errors: 2/2 investigated "consistently failing" tasks had incorrect expected verdicts
 
 ## Methodology
 
@@ -60,78 +59,131 @@ This document contains the comprehensive technical analysis supporting the findi
 
 ### 1. Can Models Maintain Domain-Specific Invariants Across Complexity?
 
-| Task Set | Score | Success Rate | Invariant Violations | What Breaks |
-|----------|-------|--------------|---------------------|-------------|
-| **v3-tasks (simple)** | 59.8 ± 16.8 | 90.0% | Minimal | Clean constraint satisfaction |
-| **v2-intermediate** | 56.9 ± 17.3 | 82.8% | Moderate | Repair loops, timing errors |
-| **v4-advanced (complex)** | 48.1 ± 17.0 | 61.3% | High | WRONG_VERDICT (22), REPAIR_FAILED (28) |
+#### v3-tasks (Simple): High Consistency
+**Haiku + Tools**: 55,55,55 | 85,85,85 | 45,45,45 | 45,45,45 | 85,85,85 (all tasks succeed consistently)
+**Haiku + No Tools**: 45,45,45 | 70,70,70 | 45,45,45 | 45,45,45 | 85,85,85 (1 repair failure)
+**Sonnet + Tools**: 55,55,55 | 85,85,85 | 45,45,45 | 45,45,45 | 85,85,85 (perfect consistency)
+**Sonnet + No Tools**: 45,45,45 | 85,85,85 | 45,45,45 | 45,45,45 | 85,85,85 (perfect consistency)
 
-**Key Finding**: **Invariant maintenance degrades predictably with complexity**. Models can hold financial constraints (cash conservation, liquidity floors) consistently on simple scenarios but struggle as overlapping events and temporal complexity increase.
+*Summary: 90-100% success rates, minimal variance*
 
-**What Breaks First**: The repair mechanisms fail before basic invariant detection. Models correctly identify violations but can't effectively fix them in complex scenarios.
+#### v2-intermediate (Medium): Moderate Degradation
+**Haiku + Tools**: Shows repair failures, JSON errors, tool call limits
+**Haiku + No Tools**: Consistent WRONG_VERDICT on apartment_overlap (10,10,10), otherwise stable
+**Sonnet + Tools**: High performance with occasional tool limits (95% success)
+**Sonnet + No Tools**: Perfect consistency (100% success), moderate scores
+
+*Summary: 68-100% success rates, repair mechanisms start failing*
+
+#### v4-advanced (Complex): Significant Breakdown
+**Haiku + Tools**: Consistent failures on graduate_school_prep (10,10,10), medical_emergency (65,65,65), frequent tool limits
+**Haiku + No Tools**: Better success rate (90%) but repair failures on apartment_move_complex
+**Sonnet + Tools**: Tool limit issues but higher scores when successful
+**Sonnet + No Tools**: Perfect success rate (100%), consistent performance
+
+*Summary: 40-100% success rates depending on configuration*
+
+**Key Finding**: **Invariant maintenance degrades predictably with complexity**. Simple scenarios show near-perfect consistency, but complex scenarios reveal distinct failure modes: tool call limits, repair mechanism failures, and verdict determination errors.
+
+**What Breaks First**: Tool-enabled configurations hit computational limits (EXCEEDED_MAX_TOOL_CALLS) before basic invariant detection fails. No-tools configurations show more consistent success rates but lower ceiling performance.
 
 ### 2. Model Differences in Invariant Maintenance
 
-| Model | Combined Score | Success Rate | Consistency |
-|-------|----------------|--------------|-------------|
-| **Sonnet-4-5** | 56.2 ± 17.0 | 81.2% | **More reliable** |
-| **Haiku-4-5** | 53.7 ± 17.6 | 74.6% | Higher variance |
-| **Difference** | +2.5 pts | +6.6% | Sonnet more stable |
+#### Haiku Performance Patterns:
+**v3-tasks**: 63.0% (tools) vs 58-59% (no-tools) - consistent but tool limits hurt
+**v2-intermediate**: Wide variance - 53-59% with many partial failures 
+**v4-advanced**: 46-54% - struggles with complex scenarios, frequent errors
 
-**Key Insight**: Sonnet maintains invariants more consistently across complexity levels, suggesting better systematic reasoning rather than just higher capability.
+*Individual task breakdown shows: apartment_overlap always fails (10,10,10), graduate_school_prep always fails (10,10,10)*
+
+#### Sonnet Performance Patterns:
+**v3-tasks**: 63.0% (tools) vs 61-63% (no-tools) - remarkably consistent
+**v2-intermediate**: 53-67% - much higher ceiling when tools work effectively
+**v4-advanced**: 50-57% - better handling of complex scenarios
+
+*Individual task breakdown shows: Perfect success on simpler task sets, graceful degradation on complex scenarios*
+
+#### Direct Model Comparison:
+**Success Rate Gap**: Sonnet achieves 100% success on multiple conditions vs Haiku's maximum 93-100%
+**Consistency**: Sonnet shows identical scores across runs (45,45,45 or 85,85,85) while Haiku varies more
+**Error Handling**: Sonnet avoids certain error categories that consistently affect Haiku
+
+**Key Insight**: Sonnet maintains invariants more consistently across complexity levels through **deterministic reasoning patterns** - identical scores across runs indicate systematic rather than stochastic problem-solving approaches.
 
 ### 3. Why Do Tools Provide So Little Benefit?
 
-**Overall Tool Impact (Surprising Results)**:
+#### Individual Task Analysis Reveals Tool Bottlenecks:
 
-| Condition | Haiku | Sonnet | Combined Effect |
-|-----------|-------|--------|-----------------|
-| **With Tools** | 53.8 ± 19.7 (77.1%) | 56.5 ± 17.2 (81.4%) | 55.2 ± 18.5 (79.3%) |
-| **No Tools** | 53.6 ± 15.5 (72.1%) | 55.8 ± 16.9 (81.0%) | 54.7 ± 16.3 (76.5%) |
-| **Tool Effect** | -0.2 pts (-5.0%) | +0.7 pts (+0.4%) | **+0.5 pts (+2.8%)** |
+**Haiku Tool Performance**:
+- v2-intermediate: Many EXCEEDED_MAX_TOOL_CALLS errors (medical_emergency: 80,80,90; tuition_payment: 90,90,90)
+- v4-advanced: Consistent tool limits on apartment_move_complex (80,75,75) and sabbatical_complex (60,70,55)
+- Tool success varies widely: pet_emergency ranges 95→85→80 across runs
 
-**Tool Usage Pattern Analysis**:
-- **Sonnet heavily favors calculator**: 534/938 calls (57%) to `calculate` tool
-- **Haiku uses tools evenly**: Balanced across validation, calculation, and advisory tools
-- **Tool call bottleneck persists**: 26 EXCEEDED_MAX_TOOL_CALLS despite 20-call limit
-- **Critical insight**: Current tool designs don't match model reasoning patterns effectively
+**Haiku No-Tool Performance**:
+- v2-intermediate: More consistent but hits specific task failures (apartment_overlap: 15,15,15)
+- v4-advanced: Better success rate (90% vs 40%) with stable scores
+- Predictable performance: apartment_move_complex consistently 63,63,63
 
-**Task Complexity × Tool Interactions**:
-| Task Set | Tool Benefit | Interpretation |
-|----------|--------------|----------------|
-| v3-tasks | +1.5 pts (+6.6%) | **Tools help only on easiest tasks** |
-| v2-intermediate | -0.8 pts (-3.5%) | **Tools hurt on medium complexity** |
-| v4-advanced | -0.3 pts (+2.5%) | **Tools neutral on hardest tasks** |
+**Sonnet Tool Performance**:
+- v2-intermediate: High success (93%) but tool limits on complex repairs (tuition_payment: 90,90,90)
+- v4-advanced: Tool limits on apartment_move_complex (65,65,55) and sabbatical_complex (60,60,60)
+- Higher ceiling when tools work: car_replacement achieves 95,90,95
+
+**Sonnet No-Tool Performance**:
+- v2-intermediate: Perfect 100% success rate with consistent scores
+- v4-advanced: Perfect 100% success rate, apartment_move_complex: 85,85,85 (vs 65,65,55 with tools)
+- Remarkable consistency: identical scores across all runs
+
+#### Tool Paradox: More Capability, More Failure Modes
+**Tools Add Computational Overhead**: 20-call limit insufficient for complex scenarios
+**Tools Create Brittleness**: EXCEEDED_MAX_TOOL_CALLS, INACCURATE_REPAIR_LABEL errors
+**No-Tools More Robust**: Higher success rates, fewer error categories
+**Critical Insight**: Current tool designs create cognitive overhead that exceeds their computational benefit for financial reasoning tasks.
 
 ### 4. What Makes Intermediate Reasoning Artifacts Effective?
 
-**Ledger Effects Analysis (The Consistent Winner)**:
+#### Individual Ledger Effects by Model and Complexity:
 
-| Condition | With-Ledger | No-Ledger | Ledger Benefit |
-|-----------|-------------|-----------|----------------|
-| **v2-intermediate** | 60.7 ± 17.8 (88.1%) | 53.1 ± 17.9 (77.0%) | **+7.6 pts (+11.1%)** |
-| **v3-tasks** | 60.4 ± 16.4 (90.0%) | 57.5 ± 17.2 (86.7%) | **+2.9 pts (+3.3%)** |
-| **v4-advanced** | 51.2 ± 17.8 (61.7%) | 45.0 ± 16.2 (61.0%) | **+6.2 pts (+0.7%)** |
-| **Combined** | 57.4 ± 17.4 (79.9%) | 51.9 ± 17.6 (74.9%) | **+5.5 pts (+5.0%)** |
+**Haiku Ledger Impact**:
+- v2-intermediate: With-ledger 59.3% vs No-ledger 52-53% (but no-ledger more consistent)
+- v3-tasks: With-ledger 63.0% vs No-ledger 59-61% (minimal difference)
+- v4-advanced: With-ledger 46-54% vs No-ledger 53% (actually hurts on complex tasks)
 
-**Why Ledgers Work Where Tools Don't**:
-- **Forces structured thinking**: Intermediate calculations make reasoning explicit
-- **Error detection**: Computational mistakes become visible and correctable  
-- **Independent of complexity**: Benefits across all task difficulty levels
-- **Model-agnostic**: Works equally well for Haiku (+5.4 pts) and Sonnet (+5.6 pts)
+*Pattern: Ledgers help medium complexity but create overhead on simple/complex tasks*
 
-**Critical Insight**: Explicit intermediate steps consistently improve performance while external tool access doesn't. This suggests internal reasoning structure matters more than external computation access.
+**Sonnet Ledger Impact**:
+- v2-intermediate: With-ledger 66.4-66.8% vs No-ledger 53-56% (**significant benefit**)
+- v3-tasks: With-ledger 63.0% vs No-ledger 61.0% (small benefit)
+- v4-advanced: With-ledger 50-57% vs No-ledger 56.7% (neutral to negative)
+
+*Pattern: Strong ledger benefit on intermediate tasks, diminishing returns on simple/complex*
+
+#### Task-Level Ledger Analysis:
+**car_replacement**: 
+- Haiku with-ledger: 75,75,90 vs no-ledger: 85,70,85 (mixed)
+- Sonnet with-ledger: 95,90,95 vs no-ledger: 85,85,85 (clear benefit)
+
+**medical_emergency**:
+- Haiku with-ledger: 80,80,90 vs no-ledger: 85,85,85 (no-ledger better)
+- Sonnet with-ledger: 90,95,80 vs no-ledger: 85,85,85 (with-ledger better)
+
+**Why Ledgers Work for Sonnet but Less for Haiku**:
+- **Sonnet utilizes structure**: Higher scores on complex repairs when ledger available
+- **Haiku gets overwhelmed**: More errors and inconsistency with ledger requirements  
+- **Model-dependent benefit**: Ledger effectiveness correlates with model sophistication
+
+**Critical Insight**: Intermediate reasoning artifacts benefit sophisticated models more than simple ones - Sonnet can leverage structured thinking while Haiku finds it burdensome.
 
 ### 5. Task Complexity as Dominant Factor
 
 **Evaluation Design Choice Impact**:
 
-| Task Set | Combined Score | Success Rate | Difficulty Rank |
-|----------|----------------|--------------|-----------------|
-| **v3-tasks** | 59.8 ± 16.8 (90.0%) | 90.0% | 1 (Easiest) |
-| **v2-intermediate** | 56.9 ± 17.3 (82.8%) | 82.8% | 2 (Medium) |
-| **v4-advanced** | 48.1 ± 17.0 (61.3%) | 61.3% | 3 (Hardest) |
-| **Performance Gap** | **11.7 points** | **28.7%** | **Large effect** |
+| Task Set            | Combined Score      | Success Rate | Difficulty Rank  |
+| ------------------- | ------------------- | ------------ | ---------------- |
+| **v3-tasks**        | 59.8 ± 16.8 (90.0%) | 90.0%        | 1 (Easiest)      |
+| **v2-intermediate** | 56.9 ± 17.3 (82.8%) | 82.8%        | 2 (Medium)       |
+| **v4-advanced**     | 48.1 ± 17.0 (61.3%) | 61.3%        | 3 (Hardest)      |
+| **Performance Gap** | **11.7 points**     | **28.7%**    | **Large effect** |
 
 **Complexity Dominance**: Task difficulty is the strongest predictor of performance, with an 11.7-point gap that dwarfs model differences (2.5 points) or tool effects (0.5 points).
 
@@ -142,8 +194,10 @@ This document contains the comprehensive technical analysis supporting the findi
 **The Humbling Discovery**: Manual verification of "consistently failing" tasks revealed evaluation framework errors, not model limitations.
 
 **Specific Cases**:
+
 1. **graduate_school_prep**: Expected "feasible" but Claude consistently returned "infeasible" across all 24 conditions
-   - **Investigation**: Manual calculation confirmed Claude was correct - expenses exceed income capacity  
+
+   - **Investigation**: Manual calculation confirmed Claude was correct - expenses exceed income capacity
    - **Fix**: Updated expected verdict to match mathematical reality
 
 2. **sabbatical_complex**: Expected "infeasible" but missing first_violation_month specification
@@ -153,36 +207,53 @@ This document contains the comprehensive technical analysis supporting the findi
 **What I Learned**: Systematic cross-model agreement against expected results warrants ground truth investigation before assuming model capability limitations. Models were being penalized for correct mathematical reasoning.
 
 **Protocol Developed**:
+
 - **Systematic vs random failure analysis**: Consistent patterns warrant investigation
-- **Cross-model validation**: Agreement against expected results suggests evaluation bugs  
+- **Cross-model validation**: Agreement against expected results suggests evaluation bugs
 - **Manual verification**: Mathematical validation against deterministic simulation
 - **Trace-driven debugging**: Comprehensive logging enables retrospective analysis
 
 ### 7. Effect Size Hierarchy and Practical Implications
 
 **What Matters Most for Applications**:
+
 1. **Task Complexity**: 11.7-point range (dominant factor)
-2. **Intermediate Reasoning Artifacts**: 5.5-point average benefit (reliable improvement)  
+2. **Intermediate Reasoning Artifacts**: 5.5-point average benefit (reliable improvement)
 3. **Model Choice**: 2.5-point difference (consistent but smaller)
 4. **Tool Access**: 0.5-point benefit (minimal/inconsistent effect)
 
 **For Practical Applications**: Focus on task design and intermediate artifacts over tool integration or model optimization.
 
-### 8. Updated Failure Mode Analysis
+### 8. Individual Task Failure Pattern Analysis
 
-**Error Distribution by Tool Condition**:
+#### Systematic Failure Patterns (Consistent Across Runs):
 
-**With Tools (348 executions)**:
-- EXCEEDED_MAX_TOOL_CALLS: 26 (7.5%) - persistent bottleneck
-- REPAIR_FAILED: 17 (4.9%)  
-- WRONG_VERDICT: 16 (4.6%)
+**apartment_overlap**: 
+- Haiku+tools+no-ledger: 10,10,10 (WRONG_VERDICT every time)
+- Haiku+no-tools+no-ledger: 15,15,15 (WRONG_VERDICT every time)
+- Sonnet: Succeeds consistently (45,45,45 or 55,55,55)
 
-**No Tools (348 executions)**:
-- REPAIR_FAILED: 41 (11.8%) - dominant failure mode
-- WRONG_VERDICT: 17 (4.9%)
-- WRONG_FIRST_VIOLATION_MONTH: 12 (3.4%)
+**graduate_school_prep**:
+- All Haiku conditions: 10,10,10 (WRONG_VERDICT - systematic reasoning error)
+- All Sonnet conditions: 45,45,45 (succeeds consistently)
 
-**Key Insight**: Tools reduce repair failures but introduce tool call limitations, with minimal net benefit overall.
+**apartment_move_complex**:
+- With tools: 65-80 partial scores (EXCEEDED_MAX_TOOL_CALLS)
+- No tools: 63-85 (Haiku fails repairs, Sonnet succeeds)
+
+#### Error Distribution by Configuration:
+
+**Tools + Complex Tasks**:
+- EXCEEDED_MAX_TOOL_CALLS: Dominates on v4-advanced (apartment_move_complex, sabbatical_complex)
+- INACCURATE_REPAIR_LABEL: Frequent on repair scenarios
+- Tool overhead creates brittleness
+
+**No Tools + Complex Tasks**:
+- REPAIR_FAILED: Primary failure mode for Haiku
+- WRONG_VERDICT: Model-specific systematic errors
+- More predictable failure patterns
+
+**Key Insight**: Individual task analysis reveals **systematic vs random failures**. Systematic failures (identical scores across runs) indicate fundamental model limitations, while variable scores indicate stochastic tool interaction problems.
 
 ## Lessons About Evaluation Quality
 
@@ -279,6 +350,6 @@ This document contains the comprehensive technical analysis supporting the findi
 
 **Design Intent**: Systematic evaluation of whether requesting intermediate artifacts (detailed calculations) improves reasoning accuracy across complexity levels.
 
-### Full Results Summary
+### Individual Results Summary
 
-Complete statistical analysis available in comparison reports at `reports/comparison_*`. Key aggregate findings confirm interaction effects and support tool effectiveness reversal conclusions across all measured dimensions.
+Complete individual task scores organized by experimental condition available in `task_scores_organized.md`. Raw execution data shows transparent performance patterns without statistical aggregation, revealing systematic vs stochastic failure modes across 696 total task executions.
