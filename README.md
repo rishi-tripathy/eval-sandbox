@@ -1,12 +1,14 @@
 # Financial Reasoning Evaluation Framework
 
-I built this framework to get hands-on with applied model reliability work. Specifically, I wanted to test whether models can accurately hold domain-specific invariants implicitly while reasoning through increasingly complex scenarios.
+I built this framework to get hands-on with applied model reliability work, with a specific bent towards questions about what the current generation of models may be capable of as long-running agents with minimal harnessing.
 
-I started in finance because the invariants are extremely clear (cash conservation, liquidity floors, temporal consistency). This let me systematically test how various model configurations and evaluation choices affect the ability to maintain these constraints—and where these patterns might generalize.
+Specifically, I wanted to test whether models can accurately hold domain-specific invariants implicitly while reasoning through increasingly complex scenarios, and how easily they can connect the dots from natural language descriptions to domain-specific reasoning models.
 
 The core mechanism: deterministic financial simulation as ground truth, enabling isolation of model reasoning failures from evaluation failures.
 
-**The task**: Given a natural language financial scenario (e.g., "I have $1000 cash, earn $2000/month, but need to buy a $3000 car next month"), models must generate a structured JSON scenario, determine if it's feasible within constraints (liquidity floors, money conservation), and if infeasible, propose a specific repair (timing shifts, amount adjustments, baseline changes).
+The task: Given a natural language financial scenario (e.g., "I have $1000 cash, earn $2000/month, but need to buy a $3000 car next month"), models must generate a structured JSON scenario, determine if it's feasible within specified constraints (liquidity floors, money conservation), and if infeasible, propose a specific repair from a list of options (timing shifts, amount adjustments, baseline changes).
+
+I started in finance because the invariants are extremely clear (cash conservation, liquidity floors, temporal consistency). This let me systematically test how various model configurations and evaluation choices affect the ability to maintain these constraints — and where these patterns may or may not generalize.
 
 ## Experimental Framework
 
@@ -14,13 +16,71 @@ The core mechanism: deterministic financial simulation as ground truth, enabling
 
 The diagram shows the complete experimental pipeline: natural language financial tasks are processed by agents under different configurations (model, tools, ledger requirements, task complexity), then evaluated against deterministic ground truth simulation to isolate model reasoning failures from evaluation artifacts.
 
-The most interesting findings:
-
-- **Task complexity dominates everything**: The 8.9-point gap between v4-advanced and v2-intermediate tasks is larger than all other factors combined. This has profound implications for how agentic systems should be scoped in production—the scenario design choice becomes more critical than model or infrastructure optimization.
-- **Tools barely help despite seeming obvious**: Only -0.7pp average effect, with high variability masking large task-specific benefits and failures. Tool integration creates unpredictable performance patterns rather than consistent improvements, challenging assumptions about computational assistance.
-- **Ledger requirements hurt across all conditions**: Requiring intermediate reasoning artifacts caused -8.4pp performance drop, contradicting my intuition about the beneifts of asking models to articulate their reasoning. My mechanistic analysis revealed this transforms the cognitive task from scenario design to arithmetic computation which seems to have distracted the model and it got more of its core cognitive work wrong.
-
 ## Key Findings
+
+Across 696 executions, a few patterns emerged:
+
+- **Task complexity dominates everything**: The 8.9-point gap between v4-advanced and v2-intermediate tasks is larger than all other factors combined. This was interesting because the 'advanced' tasks were those with less clear wording that connected the user input to the domain-specific task. This suggests that translating general domain knoweldge into a specific task shape has large dependency on the way the input is communicated, which has implications on how agentic systems might be scoped in production — it seems fairly critical that 'task shape' be decided as clearly as possible and is likely to the most sensitive juncture to good design (relative to e.g. other config options).
+
+- **Tools barely help despite seeming obvious**: Only -0.7pp average effect, with high variability masking large task-specific benefits and failures. Tool integration creates unpredictable performance patterns rather than consistent improvements, challenging assumptions about computational assistance. That said, I didn't spent much time optimizing the tools for this exploration and might have designed suboptimal ones.
+
+- **Requesting intermediate reasoning artifacts hurt across all conditions**: Requiring intermediate reasoning artifacts caused -8.4pp performance drop, contradicting my intuition about the beneifts of asking models to articulate their reasoning. My mechanistic analysis revealed this transforms the cognitive task from scenario design to arithmetic computation which seems to have distracted the model and it got more of its core cognitive work wrong. This might also be something that has less negative impact with models better at reasoning, which I didn't test here due to cost considerations.
+
+## What I Was Trying to Learn
+
+I designed this framework to get hands-on with fundamental questions about model reliability, with a specific bent towards questions about what the current generation of models may be capable of as long-running agents with minimal harnessing.
+
+**Core Research Questions**:
+
+- How well can models hold domain-specific invariants as they reason through more complexity and ambiguity?
+- What parameters of the configuration setup/harness are most impactful on effectiveness?
+- What does this say about the kinds of tasks/projects agents can take on, and the UX we provide for them?
+
+**Specific Capabilities Under Test**:
+
+- Constraint satisfaction under uncertainty: Can models maintain financial invariants (cash conservation, liquidity floors) when scenario details are incomplete or ambiguous?
+- Long-term consistency in multi-step reasoning: Do models preserve constraints across the full reasoning chain from natural language → JSON → feasibility analysis → repair?
+- Error detection and correction capabilities: When initial scenarios violate constraints, can models identify the specific violation type and propose targeted repairs?
+
+**Methodological Goals**:
+
+- Distinguish model limitations from evaluation framework failures through deterministic ground truth
+- Isolate the effects of tools, intermediate artifacts, model choice, and task complexity through factorial design
+- Understand interaction effects that single-condition evaluations would miss
+
+The factorial design (2 models × 2 tool configurations × 3 task complexity levels × 2 ledger conditions × 3 runs) enables systematic attribution of performance differences to specific factors rather than confounded variables.
+
+## Quick Start
+
+```bash
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY=your_key
+
+# Run systematic comparison
+python -m workbench run-comparison \
+  --models claude,claude-tools \
+  --task-sets tasks/v3-tasks-with-ledger \
+  --runs 3
+
+# Single task for debugging
+python -m workbench run-single tasks/v2-intermediate/apartment_overlap.json --model claude
+```
+
+## Architecture
+
+| Component       | Purpose                                                   |
+| --------------- | --------------------------------------------------------- |
+| `simulate.py`   | Deterministic ledger engine (ground truth)                |
+| `invariants.py` | LIQUIDITY_FLOOR, MONEY_CONSERVATION, TEMPORAL_CONSISTENCY |
+| `agents.py`     | Two-turn loop: generate → validate → repair               |
+| `comparison.py` | Factorial A/B testing infrastructure                      |
+| `scoring.py`    | Partial credit scoring across 5 dimensions                |
+
+Traces written to `traces/<session_id>/`, comparison reports to `reports/`.
+
+## Results Overview
+
+_See [FINDINGS.md](./FINDINGS.md) for detailed methodology and results._
 
 From 696 task executions across factorial comparison (2×2×2×3 design):
 
@@ -40,47 +100,6 @@ From 696 task executions across factorial comparison (2×2×2×3 design):
 - **Cognitive overhead from structured outputs**: Ledger requirements fundamentally change task demands from scenario reasoning to arithmetic computation, causing systematic performance degradation across all conditions.
 
 - **Model differences emerge under tool stress**: Haiku shows 100% of JSON parsing errors and higher tool-induced brittleness, suggesting tools amplify existing capability gaps rather than compensating for them.
-
-## What I Was Trying to Learn
-
-I designed this framework to get hands-on with questions like:
-
-1. Can models maintain domain-specific invariants while reasoning through increasingly complex scenarios? I started with a domain (finance) where the invariants are extremely clear.
-2. How do you distinguish model limitations from evaluation failures?
-3. When do tools help vs. hurt reasoning accuracy? What other factors can help?
-4. What interaction effects emerge across model × tool × task complexity?
-
-The factorial design (2 models × 2 tool configurations × 4 task sets × 3 runs) enables attribution that single-condition evaluations miss. Whether these specific findings generalize, I'm not sure—but the methodology felt like the right way to ask the questions.
-
-## Quick Start
-
-```bash
-pip install -r requirements.txt
-export ANTHROPIC_API_KEY=your_key
-
-# Run systematic comparison
-python -m workbench run-comparison \
-  --models claude,claude-tools \
-  --task-sets tasks/v3-tasks-with-ledger \
-  --runs 3
-
-# Single task for debugging
-python -m workbench run-single tasks/v2-intermediate/apartment_overlap.json --model claude
-```
-
-See [FINDINGS.md](./FINDINGS.md) for detailed methodology and results.
-
-## Architecture
-
-| Component       | Purpose                                                   |
-| --------------- | --------------------------------------------------------- |
-| `simulate.py`   | Deterministic ledger engine (ground truth)                |
-| `invariants.py` | LIQUIDITY_FLOOR, MONEY_CONSERVATION, TEMPORAL_CONSISTENCY |
-| `agents.py`     | Two-turn loop: generate → validate → repair               |
-| `comparison.py` | Factorial A/B testing infrastructure                      |
-| `scoring.py`    | Partial credit scoring across 5 dimensions                |
-
-Traces written to `traces/<session_id>/`, comparison reports to `reports/`.
 
 ## Implications for Long-Running Agents & Trust
 
@@ -106,12 +125,12 @@ The findings suggest specific design patterns for reliable long-running agents:
 
 - **Review/queue systems for cognitive overhead**: The ledger finding shows that requiring structured outputs fundamentally changes cognitive demands. Systems should queue complex reasoning for review rather than demanding immediate structured responses.
 
-**Open questions for generalization**:
+**Open questions I'm still thinking about**:
 
 - Do these patterns (complexity >> tools >> model) hold across other structured reasoning domains?
 - Can tool integration or intermediate artifacts be redesigned to reduce rather than amplify performance variance?
 - What level of task complexity enables reliable invariant maintenance for different applications?
-- How should agent systems detect and communicate when they're approaching their reliability boundaries?
+- How should agent systems detect and communicate when they're approaching their limits?
 
 The framework methodology—factorial comparison with deterministic ground truth—felt like the right way to get empirical answers to these reliability questions.
 
