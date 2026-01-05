@@ -18,7 +18,7 @@ The diagram shows the complete experimental pipeline: natural language financial
 
 ## Key Findings
 
-Across 696 executions, a few patterns emerged:
+Across 696 executions, a few patterns emerged. Overall - it seems that the only model configuration that helped was Sonnet over Haiku, as expected. Other architectural / harness setups (tools, or requesting intermediate reasoning artifacts) were neutral or negative on performance.
 
 - **Task complexity dominates everything**: The 8.9-point gap between v4-advanced and v2-intermediate tasks is larger than all other factors combined. This was interesting because the 'advanced' tasks were those with less clear wording that connected the user input to the domain-specific task. This suggests that translating general domain knoweldge into a specific task shape has large dependency on the way the input is communicated, which has implications on how agentic systems might be scoped in production — it seems fairly critical that 'task shape' be decided as clearly as possible and is likely to the most sensitive juncture to good design (relative to e.g. other config options).
 
