@@ -1,8 +1,8 @@
 # Financial Reasoning Evaluation Framework
 
-I built this framework to get hands-on with applied model reliability work, with a specific bent towards questions about what the current generation of models may be capable of as long-running agents with minimal harnessing.
+I built this framework to get hands-on with applied model reliability work, with a specific bent towards questions about what the current generation of models may be capable of as agents with minimal harnessing.
 
-Specifically, I wanted to test whether models can accurately hold domain-specific invariants implicitly while reasoning through increasingly complex scenarios, and how easily they can connect the dots from natural language descriptions to domain-specific reasoning models.
+I wanted to test whether models can accurately hold domain-specific invariants implicitly while reasoning through increasingly complex scenarios, and how easily they can connect the dots from natural language descriptions to domain-specific reasoning models.
 
 The core mechanism: deterministic financial simulation as ground truth, enabling isolation of model reasoning failures from evaluation failures.
 
